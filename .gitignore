@@ -1,4 +1,5 @@
-ft_nm_otool
+./ft_nm
+./ft_otool
 
 # Prerequisites
 *.d
