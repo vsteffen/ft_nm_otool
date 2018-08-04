@@ -2,7 +2,7 @@
 
 int			main(int ac, char **av, char **env)
 {
-	ft_putstr("Hello world!\n");
+	ft_putstr("Hello OTOOL!\n");
 
 	(void)ac;
 	(void)av;

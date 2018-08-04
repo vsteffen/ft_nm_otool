@@ -10,7 +10,7 @@
 #                                                                              #
 # **************************************************************************** #
 
-NAME = ft_nm_otool
+NAME	=	ft_nm_otool
 
 CC 		=	/usr/bin/clang
 RM 		=	/bin/rm
@@ -20,9 +20,7 @@ AR 		=	/usr/bin/ar
 RANLIB 	=	/usr/bin/ranlib
 GIT		=	/usr/bin/git
 
-OBJ = $(patsubst %.c, $(OPATH)/%.o, $(SRC))
-
-CFLAGS = -Wall -Wextra -Werror -g
+CFLAGS	=	-Wall -Wextra -Werror -g
 
 LIB		=	$(ROOT)/lib
 LIBSRCS	=	$(ROOT)/libsrcs
@@ -34,7 +32,15 @@ CPATH 	=	$(ROOT)/srcs
 LPATH	=	$(LIBFT)/libft.a
 HPATH 	=	-I $(ROOT)/includes -I $(LIBFT)/includes
 
-SRC =	ft_nm_otool.c
+NM 		= 	ft_nm
+NM_SRC	=	$(NM)/ft_nm.c
+
+NM_OBJ	=	$(patsubst %.c, $(OPATH)/%.o, $(NM_SRC))
+
+OTOOL 		= 	ft_otool
+OTOOL_SRC	=	$(OTOOL)/ft_otool.c
+
+OTOOL_OBJ	=	$(patsubst %.c, $(OPATH)/%.o, $(OTOOL_SRC))
 
 .PHONY: all clean fclean re
 
@@ -51,10 +57,12 @@ pre-check-lib:
 	@echo "Compile or verify lib"
 	@$(MAKE) $(LIBFT)
 
-$(NAME): $(OPATH) $(OBJ)
+$(NAME): $(OPATH) $(OTOOL_OBJ) $(NM_OBJ)
 	@echo "\n\033[33m\033[4m\033[1m → ft_nm_otool \"Make\"\033[0m"
-	@echo "Building $@"
-	@$(CC) -o $@ $(CFLAGS) $(OBJ) $(LPATH) $(HPATH)
+	@echo "Building $(NM)"
+	@$(CC) -o $(NM) $(CFLAGS) $(NM_OBJ) $(LPATH) $(HPATH)
+	@echo "Building $(OTOOL)"
+	@$(CC) -o $(OTOOL) $(CFLAGS) $(OTOOL_OBJ) $(LPATH) $(HPATH)
 	@echo "\033[32m ╔════════════════╗"
 	@echo " ║  All is done ! ║"
 	@echo " ╚════════════════╝\033[0m"
@@ -65,8 +73,7 @@ $(OPATH)/%.o: $(CPATH)/%.c
 $(OPATH):
 	@echo "\n\033[33m\033[4m\033[1m → ft_nm_otool \"Building objs\"\033[0m"
 	@echo "Creating OBJ directory"
-	@$(MKDIR) $@
-	@echo "Creating OBJ files if they do not exist or have changed"
+	@$(MKDIR) $@ $@/$(NM) $@/$(OTOOL)
 
 clean:
 	@echo "\n\033[33m\033[4m\033[1m → ft_nm_otool \"Clean\"\033[0m"
@@ -76,9 +83,11 @@ clean:
 
 fclean: clean
 	@echo "\n\033[33m\033[4m\033[1m → ft_nm_otool \"Fclean\"\033[0m"
-	@echo "Deleting $(NAME)."
-	$(RM) -f $(NAME)
-	@echo "\033[32m$(NAME) deleted.\033[0m\n"
+	@echo "Deleting $(NM)."
+	$(RM) -f $(NM)
+	@echo "Deleting $(OTOOL)."
+	$(RM) -f $(OTOOL)
+	@echo "\033[32m$(NM) and $(OTOOL) deleted.\033[0m\n"
 	@echo "Deleting lib content."
 	@$(MAKE) $(LIBFT) fclean
 	@echo "\033[32mLib content deleted.\033[0m\n"
