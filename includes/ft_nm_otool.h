@@ -8,10 +8,10 @@
 # include <mach-o/nlist.h>
 # include <fcntl.h>
 
-typedef struct		s_elem {
-	struct s_elem	*prec;
-	struct s_elem	*next;
-}					t_elem;
+typedef struct		s_symbol_table {
+	struct s_symbol	*current;
+	struct s_symbol	*next;
+}					t_symbol_table;
 
 
 #endif

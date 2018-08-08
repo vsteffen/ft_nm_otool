@@ -6,7 +6,7 @@
 #    By: vsteffen <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2016/02/06 20:52:05 by vsteffen          #+#    #+#              #
-#    Updated: 2018/03/20 18:17:27 by vsteffen         ###   ########.fr        #
+#    Updated: 2018/08/07 17:58:24 by vsteffen         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -88,9 +88,10 @@ fclean: clean
 	@echo "Deleting $(OTOOL)."
 	$(RM) -f $(OTOOL)
 	@echo "\033[32m$(NM) and $(OTOOL) deleted.\033[0m\n"
-	@echo "Deleting lib content."
-	@$(MAKE) $(LIBFT) fclean
 	@echo "\033[32mLib content deleted.\033[0m\n"
 
+libft:
+	@$(MAKE) $(LIBFT) fclean
+	@$(MAKE) $(LIBFT)
 
 re: fclean all

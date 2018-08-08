@@ -8,69 +8,170 @@ int8_t		exit_nm(char *path, char *message)
 	return (EXIT_FAILURE);
 }
 
-int8_t		iter_sym_table_and_print(uint32_t nsyms, uint32_t symoff, uint32_t stroff, char *content)
+int8_t		get_location(int8_t n_type)
+{
+	if ((n_type & N_STAB) > 0)
+		return (0); // symbol is for debugging
+	if ((n_type & N_EXT) == N_EXT && (n_type & N_PEXT) == N_PEXT)
+		return (1); // symbol is non external
+	if ((n_type & N_EXT) == N_EXT)
+		return (2); // symbol is external
+	return (3); // symbol is private external
+}
+
+char		get_correct_letter(char letter, int8_t stab_ext_p_local)
+{
+	if (stab_ext_p_local == 1)
+		return (letter + 32);
+	return (letter);
+}
+
+// CHEAT SHEET
+
+// debug -> mask N_STAB on n_type
+// external -> mask N_EXT on n_type
+// private external -> mask N_PEXT on n_type
+// non external -> mask N_EXT and N_PEXT on n_type
+
+// Get true type with mask N_TYPE on n_type
+// undefined -> mask N_UNDF with N_TYPE
+// absolute -> mask N_ABS with N_TYPE
+// indirect -> mask N_INDR with N_TYPE
+// section -> mask N_SECT with N_TYPE
+// common -> masks N_UNDF and N_EXT with n_value > 0
+
+// Section type
+
+struct section_64		*get_section(char *content, uint32_t ordinal)
+{
+	size_t						i;
+	int8_t						count;
+	struct mach_header_64		*header;
+	struct load_command			*lc;
+	struct segment_command_64	*seg;
+
+	header = (struct mach_header_64 *)content;
+	lc = (void *)content + sizeof(*header);
+	i = 0;
+	count = 0;
+	while (i++ < header->ncmds)
+	{
+		if (lc->cmd == LC_SEGMENT_64)
+		{
+			seg = (struct segment_command_64 *)lc;
+			if (count + seg->nsects >= ordinal)
+				return ((void*)seg + sizeof(*seg) + sizeof(struct section_64) * (ordinal - count - 1));
+			count += seg->nsects;
+		}
+		lc = (void *)lc + lc->cmdsize;
+	}
+	return (NULL);
+}
+
+int8_t		iter_sym_table_and_print(char *content, struct symtab_command *sym, struct segment_command_64 *seg)
 {
 	uint32_t			i;
 	uint32_t			count;
 	char				*string_table;
 	struct nlist_64		*sym_table_entry;
+	struct section_64	*sect;
+	int8_t				stab_ext_p_local;
+	int8_t				real_type;
 
-	sym_table_entry = (void *)content + symoff;
-	string_table = (void *)content + stroff;
+	(void)seg;
+	sym_table_entry = (void *)content + sym->symoff;
+	string_table = (void *)content + sym->stroff;
 	i = 0;
 	count = 0;
-	while (i < nsyms)
+	while (i < sym->nsyms)
 	{
-		// ft_printf("sym_table_entry[i].n_type -> %x | (sym_table_entry[i].n_type & N_STAB) -> %x | N_STAB -> %x\n", sym_table_entry[i].n_type, (sym_table_entry[i].n_type & N_STAB), N_STAB);
-		if ((sym_table_entry[i].n_type & N_STAB) == 0)
+		stab_ext_p_local = get_location(sym_table_entry[i].n_type);
+		real_type = (sym_table_entry[i].n_type & N_TYPE);
+		if (stab_ext_p_local > 0)
 		{
-			// ft_printf("%d: [%s] | n_type -> [%hhx] | n_sect -> [%hhx]\n"
-			// , i, string_table + sym_table_entry[i].n_un.n_strx, sym_table_entry[i].n_type, sym_table_entry[i].n_sect);
-			ft_printf("%016llx", sym_table_entry[i].n_value);
-			if ((sym_table_entry[i].n_type & N_UNDF) == N_UNDF)
-				ft_printf(" U ");
-			else if ((sym_table_entry[i].n_type & N_ABS) == N_ABS)
-				ft_printf(" A ");
-			else if ((sym_table_entry[i].n_type & N_PBUD) == N_PBUD)
-				ft_printf(" u ");
-			else if ((sym_table_entry[i].n_type & N_INDR) == N_INDR)
-				ft_printf(" U ");
+			if (real_type != N_UNDF)
+				ft_printf("%016llx", sym_table_entry[i].n_value);
+			else
+				ft_putstr("                ");
+			// if (stab_ext_p_local == 2 && (real_type & N_UNDF) == N_UNDF && sym_table_entry[i].n_value > 0) // Detect common
+			// 	ft_printf(" %c ", get_correct_letter('C', stab_ext_p_local));
+			if ((real_type & N_SECT) == N_SECT) // section
+			{
+				sect = get_section(content, sym_table_entry[i].n_sect);
+
+				// if (sec != NULL)
+				// 	ft_printf(" (%s,%s) ", sect->segname, sect->sectname);
+
+				if (ft_strcmp(sect->sectname, SECT_TEXT) == 0)
+					ft_printf(" %c ", get_correct_letter('T', stab_ext_p_local));
+				else if (ft_strcmp(sect->sectname, SECT_DATA) == 0)
+					ft_printf(" %c ", get_correct_letter('D', stab_ext_p_local));
+				else if (ft_strcmp(sect->sectname, SECT_BSS) == 0)
+					ft_printf(" %c ", get_correct_letter('B', stab_ext_p_local));
+				else
+					ft_printf(" %c ", get_correct_letter('S', stab_ext_p_local));
+			}
+			else if ((real_type & N_UNDF) == N_UNDF) // detect undefined
+			{
+					ft_printf(" %c ", get_correct_letter('U', stab_ext_p_local));
+			}
+			else if ((real_type & N_ABS) == N_ABS) // detect absolute
+				ft_printf(" %c ", get_correct_letter('A', stab_ext_p_local));
+			// else if ((real_type & N_PBUD) == N_PBUD)
+				// 	ft_printf(" %c ", get_correct_letter('U', stab_ext_p_local));
+			else if ((real_type & N_INDR) == N_INDR) // detect indirect
+				ft_printf(" %c ", get_correct_letter('I', stab_ext_p_local));
 			else
 			{
-				ft_putstr("ft_nm: Unknown symbol table type\n");
+				ft_putstr("\nft_nm: Unknown symbol table type\n");
 				return (-1);
 			}
 			ft_printf("%s\n", string_table + sym_table_entry[i].n_un.n_strx);
 			count++;
 		}
-		// ft_putstr(string_table + array[i].n_un.n_strx);
-		// ft_putchar('\n');
 		i++;
 	}
 	return (0);
-	// ft_printf("Count -> %d\n", count);
+}
+
+void		print_sections(struct segment_command_64 *seg)
+{
+	size_t				i;
+	struct section_64	*sect;
+	i = 0;
+	sect = (void *)seg + sizeof(*seg);
+	while (i < seg->nsects)
+	{
+		ft_printf(" └─> Section [%s]\n", sect[i].sectname);
+		i++;
+	}
 }
 
 int8_t		handle_64(char *content)
 {
-	uint32_t				ncmds;
-	size_t					i;
-	struct mach_header_64	*header;
-	struct load_command		*lc;
-	struct symtab_command	*sym;
+	uint32_t					ncmds;
+	size_t						i;
+	struct mach_header_64		*header;
+	struct load_command			*lc;
+	struct symtab_command		*sym;
+	struct segment_command_64	*seg;
 
 	header = (struct mach_header_64 *)content;
 	ncmds = header->ncmds;
 	lc = (void *)content + sizeof(*header);
 	i = 0;
+	seg = NULL;
 	while (i++ < ncmds)
 	{
 		if (lc->cmd == LC_SYMTAB)
 		{
-			sym = (struct symtab_command *)lc;
-			// ft_printf("NB symbole -> %d\n", sym->nsyms);
-			return (iter_sym_table_and_print(sym->nsyms, sym->symoff, sym->stroff, content));
-
+			return (iter_sym_table_and_print(content, (struct symtab_command *)lc, seg));
+		}
+		if (lc->cmd == LC_SEGMENT_64)
+		{
+			seg = (struct segment_command_64 *)lc;
+			ft_printf("SEGMENT [%s] have [%d] section(s)\n", seg->segname, seg->nsects);
+			print_sections(seg);
 		}
 		lc = (void *)lc + lc->cmdsize;
 	}
@@ -78,26 +179,29 @@ int8_t		handle_64(char *content)
 	return (-1);
 }
 
-int8_t		analyse_content(char *content)
+int8_t		analyse_content(char *content, char *path)
 {
 	unsigned int	magic_number;
 
-	magic_number = *(unsigned int *)content;
-	if (magic_number == MH_MAGIC_64)
+	if (!content)
 	{
-		// ft_putstr("This is an mach-o 64 file\n");
+		ft_printf("ft_nm: %s: The file was not recognized as a valid object file\n", path);
+		return (-1);
+	}
+	magic_number = *(unsigned int *)content;
+	if (magic_number == MH_MAGIC_64 || magic_number == MH_CIGAM_64)
+	{
 		return (handle_64(content));
 	}
-	else
+	else if (magic_number == MH_MAGIC || magic_number == MH_CIGAM)
 	{
-		// ft_putstr("This isn't an mach-o 64 file\n");
+		ft_putstr("This is an mach-o 32 bits file\n");
 	}
-	return (handle_64(content));
-	ft_putstr("ft_nm: Unknown magic number\n");
+	ft_printf("ft_nm: %s: The file was not recognized as a valid object file\n", path);
 	return (-1);
 }
 
-int8_t		get_file_content(char *path)
+int8_t		get_file_content(char *path, int ac)
 {
 	int				fd;
 	char			*content;
@@ -111,7 +215,9 @@ int8_t		get_file_content(char *path)
 		return (exit_nm(path, ": Is a directory\n"));
 	if ((content = mmap(0, file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED)
 		return (exit_nm(path, ": Can't map file\n"));
-	if (analyse_content(content) == -1)
+	if (ac > 2)
+		ft_printf("\n%s:\n", path);
+	if (analyse_content(content, path) == -1)
 		return (EXIT_FAILURE);
 	if (munmap(content, file_stat.st_size) < 0)
 		return (exit_nm(path, ": Can't free memory allocated to map file\n"));
@@ -128,7 +234,7 @@ int			main(int ac, char **av)
 
 	if (ac == 1)
 	{
-		return (get_file_content("./a.out"));
+		return (get_file_content("./a.out", 1));
 	}
 	else
 	{
@@ -136,7 +242,7 @@ int			main(int ac, char **av)
 		return_status = EXIT_SUCCESS;
 		while (i++ < ac)
 		{
-			if ((status = get_file_content(av[i - 1])) == EXIT_FAILURE)
+			if ((status = get_file_content(av[i - 1], ac)) == EXIT_FAILURE)
 				return_status = EXIT_FAILURE;
 		}
 		return (return_status);
