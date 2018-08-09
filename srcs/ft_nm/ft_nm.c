@@ -12,7 +12,7 @@ int8_t		get_location(int8_t n_type)
 {
 	if ((n_type & N_STAB) > 0)
 		return (0); // symbol is for debugging
-	if ((n_type & N_EXT) == N_EXT && (n_type & N_PEXT) == N_PEXT)
+	if ((n_type & N_EXT) != N_EXT && (n_type & N_PEXT) != N_PEXT)
 		return (1); // symbol is non external
 	if ((n_type & N_EXT) == N_EXT)
 		return (2); // symbol is external
@@ -26,23 +26,7 @@ char		get_correct_letter(char letter, int8_t stab_ext_p_local)
 	return (letter);
 }
 
-// CHEAT SHEET
-
-// debug -> mask N_STAB on n_type
-// external -> mask N_EXT on n_type
-// private external -> mask N_PEXT on n_type
-// non external -> mask N_EXT and N_PEXT on n_type
-
-// Get true type with mask N_TYPE on n_type
-// undefined -> mask N_UNDF with N_TYPE
-// absolute -> mask N_ABS with N_TYPE
-// indirect -> mask N_INDR with N_TYPE
-// section -> mask N_SECT with N_TYPE
-// common -> masks N_UNDF and N_EXT with n_value > 0
-
-// Section type
-
-struct section_64		*get_section(char *content, uint32_t ordinal)
+struct section_64		*get_section_64(char *content, uint32_t ordinal)
 {
 	size_t						i;
 	int8_t						count;
@@ -68,22 +52,36 @@ struct section_64		*get_section(char *content, uint32_t ordinal)
 	return (NULL);
 }
 
-int8_t		iter_sym_table_and_print(char *content, struct symtab_command *sym, struct segment_command_64 *seg)
+// CHEAT SHEET
+
+// debug -> mask N_STAB on n_type
+// external -> mask N_EXT on n_type
+// private external -> mask N_PEXT on n_type
+// non external -> mask N_EXT and N_PEXT on n_type
+
+// Get true type with mask N_TYPE on n_type
+// undefined -> mask N_UNDF with N_TYPE
+// absolute -> mask N_ABS with N_TYPE
+// indirect -> mask N_INDR with N_TYPE
+// section -> mask N_SECT with N_TYPE
+// common -> masks N_UNDF and N_EXT with n_value > 0
+
+int8_t		iter_sym_table_and_print(char *content, struct symtab_command *sym_command, struct segment_command_64 *seg)
 {
 	uint32_t			i;
 	uint32_t			count;
-	char				*string_table;
+	char				*sym_table_string;
 	struct nlist_64		*sym_table_entry;
 	struct section_64	*sect;
 	int8_t				stab_ext_p_local;
 	int8_t				real_type;
 
 	(void)seg;
-	sym_table_entry = (void *)content + sym->symoff;
-	string_table = (void *)content + sym->stroff;
+	sym_table_entry = (void *)content + sym_command->symoff;
+	sym_table_string = (void *)content + sym_command->stroff;
 	i = 0;
 	count = 0;
-	while (i < sym->nsyms)
+	while (i < sym_command->nsyms)
 	{
 		stab_ext_p_local = get_location(sym_table_entry[i].n_type);
 		real_type = (sym_table_entry[i].n_type & N_TYPE);
@@ -97,7 +95,7 @@ int8_t		iter_sym_table_and_print(char *content, struct symtab_command *sym, stru
 			// 	ft_printf(" %c ", get_correct_letter('C', stab_ext_p_local));
 			if ((real_type & N_SECT) == N_SECT) // section
 			{
-				sect = get_section(content, sym_table_entry[i].n_sect);
+				sect = get_section_64(content, sym_table_entry[i].n_sect);
 
 				// if (sec != NULL)
 				// 	ft_printf(" (%s,%s) ", sect->segname, sect->sectname);
@@ -126,25 +124,12 @@ int8_t		iter_sym_table_and_print(char *content, struct symtab_command *sym, stru
 				ft_putstr("\nft_nm: Unknown symbol table type\n");
 				return (-1);
 			}
-			ft_printf("%s\n", string_table + sym_table_entry[i].n_un.n_strx);
+			ft_printf("%s\n", sym_table_string + sym_table_entry[i].n_un.n_strx);
 			count++;
 		}
 		i++;
 	}
 	return (0);
-}
-
-void		print_sections(struct segment_command_64 *seg)
-{
-	size_t				i;
-	struct section_64	*sect;
-	i = 0;
-	sect = (void *)seg + sizeof(*seg);
-	while (i < seg->nsects)
-	{
-		ft_printf(" └─> Section [%s]\n", sect[i].sectname);
-		i++;
-	}
 }
 
 int8_t		handle_64(char *content)
@@ -153,25 +138,31 @@ int8_t		handle_64(char *content)
 	size_t						i;
 	struct mach_header_64		*header;
 	struct load_command			*lc;
-	struct symtab_command		*sym;
 	struct segment_command_64	*seg;
+	struct s_nm_64				*nm_64;
 
 	header = (struct mach_header_64 *)content;
 	ncmds = header->ncmds;
 	lc = (void *)content + sizeof(*header);
 	i = 0;
 	seg = NULL;
+	nm_64 = get_nm_64(content);
+	print_symboles_64(nm_64->sym_list);
+	ft_printf("\n");
+	print_sections_64(nm_64->sect_list);
+	return(0);
 	while (i++ < ncmds)
 	{
 		if (lc->cmd == LC_SYMTAB)
 		{
+			ft_putstr("\n");
 			return (iter_sym_table_and_print(content, (struct symtab_command *)lc, seg));
 		}
 		if (lc->cmd == LC_SEGMENT_64)
 		{
 			seg = (struct segment_command_64 *)lc;
-			ft_printf("SEGMENT [%s] have [%d] section(s)\n", seg->segname, seg->nsects);
-			print_sections(seg);
+			ft_printf("\nSEGMENT [%s] have [%d] section(s)\n", seg->segname, seg->nsects);
+			print_sections_64_deprecated(seg);
 		}
 		lc = (void *)lc + lc->cmdsize;
 	}

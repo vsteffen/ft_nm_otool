@@ -8,10 +8,29 @@
 # include <mach-o/nlist.h>
 # include <fcntl.h>
 
-typedef struct		s_symbol_table {
-	struct s_symbol	*current;
-	struct s_symbol	*next;
-}					t_symbol_table;
+typedef struct			s_sym_64 {
+	struct nlist_64		current;
+	char				*sym_table_string;
+	size_t				order;
+	struct s_sym_64		*next;
+}						t_sym_64;
 
+typedef struct			s_sect_64 {
+	struct section_64	current;
+	struct s_sect_64	*next;
+	size_t				ordinal;
+}						t_sect;
+
+typedef struct			s_nm_64 {
+	struct s_sym_64		*sym_list;
+	struct s_sect_64	*sect_list;
+}						t_nm_data;
+
+struct s_nm_64		*get_nm_64(char *content);
+
+void		print_sections_64(struct s_sect_64 *sect_list);
+void		print_sections_64_deprecated(struct segment_command_64 *seg);
+void		print_segments_64_deprecated(char *content);
+void		print_symboles_64(struct s_sym_64 *sym_list);
 
 #endif

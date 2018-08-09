@@ -33,7 +33,9 @@ LPATH	=	$(LIBFT)/libft.a
 HPATH 	=	-I $(ROOT)/includes -I $(LIBFT)/includes
 
 NM 		= 	ft_nm
-NM_SRC	=	$(NM)/ft_nm.c
+NM_SRC	=	$(NM)/ft_nm.c \
+			$(NM)/print_nm.c \
+			$(NM)/get_nm_64.c
 
 NM_OBJ	=	$(patsubst %.c, $(OPATH)/%.o, $(NM_SRC))
 
@@ -88,10 +90,10 @@ fclean: clean
 	@echo "Deleting $(OTOOL)."
 	$(RM) -f $(OTOOL)
 	@echo "\033[32m$(NM) and $(OTOOL) deleted.\033[0m\n"
-	@echo "\033[32mLib content deleted.\033[0m\n"
 
 libft:
 	@$(MAKE) $(LIBFT) fclean
 	@$(MAKE) $(LIBFT)
+	@echo "\033[32mLib content recompiled.\033[0m\n"
 
 re: fclean all
