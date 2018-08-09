@@ -26,28 +26,13 @@ char		get_correct_letter(char letter, int8_t stab_ext_p_local)
 	return (letter);
 }
 
-struct section_64		*get_section_64(char *content, uint32_t ordinal)
+struct s_sect_64		*get_section_64(struct s_sect_64 *sect_list, uint32_t ordinal)
 {
-	size_t						i;
-	int8_t						count;
-	struct mach_header_64		*header;
-	struct load_command			*lc;
-	struct segment_command_64	*seg;
-
-	header = (struct mach_header_64 *)content;
-	lc = (void *)content + sizeof(*header);
-	i = 0;
-	count = 0;
-	while (i++ < header->ncmds)
+	while (sect_list)
 	{
-		if (lc->cmd == LC_SEGMENT_64)
-		{
-			seg = (struct segment_command_64 *)lc;
-			if (count + seg->nsects >= ordinal)
-				return ((void*)seg + sizeof(*seg) + sizeof(struct section_64) * (ordinal - count - 1));
-			count += seg->nsects;
-		}
-		lc = (void *)lc + lc->cmdsize;
+		if (sect_list->ordinal == ordinal)
+			return (sect_list);
+		sect_list = sect_list->next;
 	}
 	return (NULL);
 }
@@ -66,45 +51,42 @@ struct section_64		*get_section_64(char *content, uint32_t ordinal)
 // section -> mask N_SECT with N_TYPE
 // common -> masks N_UNDF and N_EXT with n_value > 0
 
-int8_t		iter_sym_table_and_print(char *content, struct symtab_command *sym_command, struct segment_command_64 *seg)
+int8_t		iter_sym_table_and_print(struct s_nm_64 *nm_64)
 {
-	uint32_t			i;
-	uint32_t			count;
-	char				*sym_table_string;
-	struct nlist_64		*sym_table_entry;
-	struct section_64	*sect;
+	struct s_sym_64		*sym;
+	struct s_sect_64	*sect;
 	int8_t				stab_ext_p_local;
 	int8_t				real_type;
 
-	(void)seg;
-	sym_table_entry = (void *)content + sym_command->symoff;
-	sym_table_string = (void *)content + sym_command->stroff;
-	i = 0;
-	count = 0;
-	while (i < sym_command->nsyms)
+	sym = nm_64->sym_list;
+	while (sym)
 	{
-		stab_ext_p_local = get_location(sym_table_entry[i].n_type);
-		real_type = (sym_table_entry[i].n_type & N_TYPE);
+		stab_ext_p_local = get_location(sym->current.n_type);
+		real_type = (sym->current.n_type & N_TYPE);
 		if (stab_ext_p_local > 0)
 		{
 			if (real_type != N_UNDF)
-				ft_printf("%016llx", sym_table_entry[i].n_value);
+				ft_printf("%016llx", sym->current.n_value);
 			else
 				ft_putstr("                ");
-			// if (stab_ext_p_local == 2 && (real_type & N_UNDF) == N_UNDF && sym_table_entry[i].n_value > 0) // Detect common
+			// if (stab_ext_p_local == 2 && (real_type & N_UNDF) == N_UNDF && sym->current.n_value > 0) // Detect common
 			// 	ft_printf(" %c ", get_correct_letter('C', stab_ext_p_local));
 			if ((real_type & N_SECT) == N_SECT) // section
 			{
-				sect = get_section_64(content, sym_table_entry[i].n_sect);
+				if (!(sect = get_section_64(nm_64->sect_list, sym->current.n_sect)))
+				{
+					ft_putstr("\nft_nm: Unknown section\n");
+					return (-1);
+				}
 
 				// if (sec != NULL)
-				// 	ft_printf(" (%s,%s) ", sect->segname, sect->sectname);
+					// ft_printf(" (%s,%s) ", sect->current.segname, sect->current.sectname);
 
-				if (ft_strcmp(sect->sectname, SECT_TEXT) == 0)
+				if (ft_strcmp(sect->current.sectname, SECT_TEXT) == 0)
 					ft_printf(" %c ", get_correct_letter('T', stab_ext_p_local));
-				else if (ft_strcmp(sect->sectname, SECT_DATA) == 0)
+				else if (ft_strcmp(sect->current.sectname, SECT_DATA) == 0)
 					ft_printf(" %c ", get_correct_letter('D', stab_ext_p_local));
-				else if (ft_strcmp(sect->sectname, SECT_BSS) == 0)
+				else if (ft_strcmp(sect->current.sectname, SECT_BSS) == 0)
 					ft_printf(" %c ", get_correct_letter('B', stab_ext_p_local));
 				else
 					ft_printf(" %c ", get_correct_letter('S', stab_ext_p_local));
@@ -115,19 +97,18 @@ int8_t		iter_sym_table_and_print(char *content, struct symtab_command *sym_comma
 			}
 			else if ((real_type & N_ABS) == N_ABS) // detect absolute
 				ft_printf(" %c ", get_correct_letter('A', stab_ext_p_local));
-			// else if ((real_type & N_PBUD) == N_PBUD)
-				// 	ft_printf(" %c ", get_correct_letter('U', stab_ext_p_local));
+			else if ((real_type & N_PBUD) == N_PBUD)
+					ft_printf(" u "); //, get_correct_letter('U', stab_ext_p_local));
 			else if ((real_type & N_INDR) == N_INDR) // detect indirect
 				ft_printf(" %c ", get_correct_letter('I', stab_ext_p_local));
 			else
 			{
-				ft_putstr("\nft_nm: Unknown symbol table type\n");
+				ft_putstr("ft_nm: Unknown symbol table type\n");
 				return (-1);
 			}
-			ft_printf("%s\n", sym_table_string + sym_table_entry[i].n_un.n_strx);
-			count++;
+			ft_printf("%s\n", sym->sym_table_string);
 		}
-		i++;
+		sym = sym->next;
 	}
 	return (0);
 }
@@ -146,26 +127,10 @@ int8_t		handle_64(char *content)
 	lc = (void *)content + sizeof(*header);
 	i = 0;
 	seg = NULL;
+	print_segments_64_deprecated(content);
 	nm_64 = get_nm_64(content);
-	print_symboles_64(nm_64->sym_list);
-	ft_printf("\n");
-	print_sections_64(nm_64->sect_list);
-	return(0);
-	while (i++ < ncmds)
-	{
-		if (lc->cmd == LC_SYMTAB)
-		{
-			ft_putstr("\n");
-			return (iter_sym_table_and_print(content, (struct symtab_command *)lc, seg));
-		}
-		if (lc->cmd == LC_SEGMENT_64)
-		{
-			seg = (struct segment_command_64 *)lc;
-			ft_printf("\nSEGMENT [%s] have [%d] section(s)\n", seg->segname, seg->nsects);
-			print_sections_64_deprecated(seg);
-		}
-		lc = (void *)lc + lc->cmdsize;
-	}
+	if (nm_64->sym_list)
+		return (iter_sym_table_and_print(nm_64));
 	ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
 	return (-1);
 }

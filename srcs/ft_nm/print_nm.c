@@ -35,6 +35,7 @@ void		print_segments_64_deprecated(char *content)
 		i++;
 		lc = (void *)lc + lc->cmdsize;
 	}
+	ft_printf("\n");
 }
 
 void		print_sections_64(struct s_sect_64 *sect_list)

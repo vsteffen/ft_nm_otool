@@ -71,7 +71,7 @@ struct s_nm_64		*get_nm_64(char *content)
 
 	header = (struct mach_header_64 *)content;
 	lc = (void *)content + sizeof(*header);
-	count_sect = 0;
+	count_sect = 1;
 	i = 0;
 	sect_last_list = NULL;
 	nm_64 = (struct s_nm_64*)malloc(sizeof(struct s_nm_64));
