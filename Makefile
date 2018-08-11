@@ -35,7 +35,8 @@ HPATH 	=	-I $(ROOT)/includes -I $(LIBFT)/includes
 NM 		= 	ft_nm
 NM_SRC	=	$(NM)/ft_nm.c \
 			$(NM)/print_nm.c \
-			$(NM)/get_nm_64.c
+			$(NM)/get_nm_64.c \
+			$(NM)/sort.c
 
 NM_OBJ	=	$(patsubst %.c, $(OPATH)/%.o, $(NM_SRC))
 

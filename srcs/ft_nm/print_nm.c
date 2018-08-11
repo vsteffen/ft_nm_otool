@@ -42,7 +42,7 @@ void		print_sections_64(struct s_sect_64 *sect_list)
 {
 	while (sect_list)
 	{
-		ft_printf(" --> Section [%s] n˚[%d]\n", sect_list->current.sectname, sect_list->ordinal);
+		ft_printf(" --> Section [%s] n˚[%d]\n", sect_list->elem.sectname, sect_list->ordinal);
 		sect_list = sect_list->next;
 	}
 }

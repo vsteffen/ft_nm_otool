@@ -61,32 +61,32 @@ int8_t		iter_sym_table_and_print(struct s_nm_64 *nm_64)
 	sym = nm_64->sym_list;
 	while (sym)
 	{
-		stab_ext_p_local = get_location(sym->current.n_type);
-		real_type = (sym->current.n_type & N_TYPE);
+		stab_ext_p_local = get_location(sym->elem.n_type);
+		real_type = (sym->elem.n_type & N_TYPE);
 		if (stab_ext_p_local > 0)
 		{
 			if (real_type != N_UNDF)
-				ft_printf("%016llx", sym->current.n_value);
+				ft_printf("%016llx", sym->elem.n_value);
 			else
 				ft_putstr("                ");
-			// if (stab_ext_p_local == 2 && (real_type & N_UNDF) == N_UNDF && sym->current.n_value > 0) // Detect common
+			// if (stab_ext_p_local == 2 && (real_type & N_UNDF) == N_UNDF && sym->elem.n_value > 0) // Detect common
 			// 	ft_printf(" %c ", get_correct_letter('C', stab_ext_p_local));
 			if ((real_type & N_SECT) == N_SECT) // section
 			{
-				if (!(sect = get_section_64(nm_64->sect_list, sym->current.n_sect)))
+				if (!(sect = get_section_64(nm_64->sect_list, sym->elem.n_sect)))
 				{
 					ft_putstr("\nft_nm: Unknown section\n");
 					return (-1);
 				}
 
 				// if (sec != NULL)
-					// ft_printf(" (%s,%s) ", sect->current.segname, sect->current.sectname);
+					// ft_printf(" (%s,%s) ", sect->elem.segname, sect->elem.sectname);
 
-				if (ft_strcmp(sect->current.sectname, SECT_TEXT) == 0)
+				if (ft_strcmp(sect->elem.sectname, SECT_TEXT) == 0)
 					ft_printf(" %c ", get_correct_letter('T', stab_ext_p_local));
-				else if (ft_strcmp(sect->current.sectname, SECT_DATA) == 0)
+				else if (ft_strcmp(sect->elem.sectname, SECT_DATA) == 0)
 					ft_printf(" %c ", get_correct_letter('D', stab_ext_p_local));
-				else if (ft_strcmp(sect->current.sectname, SECT_BSS) == 0)
+				else if (ft_strcmp(sect->elem.sectname, SECT_BSS) == 0)
 					ft_printf(" %c ", get_correct_letter('B', stab_ext_p_local));
 				else
 					ft_printf(" %c ", get_correct_letter('S', stab_ext_p_local));
@@ -127,8 +127,9 @@ int8_t		handle_64(char *content)
 	lc = (void *)content + sizeof(*header);
 	i = 0;
 	seg = NULL;
-	print_segments_64_deprecated(content);
+	// print_segments_64_deprecated(content);
 	nm_64 = get_nm_64(content);
+	sort_nm_64(nm_64, 0);
 	if (nm_64->sym_list)
 		return (iter_sym_table_and_print(nm_64));
 	ft_putstr("ft_nm: The file was not recognized as a valid object file\n");

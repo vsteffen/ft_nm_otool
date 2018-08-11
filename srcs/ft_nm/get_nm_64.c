@@ -17,7 +17,7 @@ struct s_sym_64			*get_sym_list_64(char *content, struct symtab_command *sym_com
 	while (i < sym_command->nsyms)
 	{
 		sym_elem = (struct s_sym_64 *)malloc(sizeof(struct s_sym_64));
-		sym_elem->current = sym_table_entry[i];
+		sym_elem->elem = sym_table_entry[i];
 		sym_elem->sym_table_string = sym_table_string + sym_table_entry[i].n_un.n_strx;
 		sym_elem->order = i;
 		if (i == 0)
@@ -43,7 +43,7 @@ struct s_sect_64	*add_sect_64_to_list(struct s_nm_64 *nm_64, struct segment_comm
 	while(i < seg->nsects)
 	{
 		sect_elem = (struct s_sect_64 *)malloc(sizeof(struct s_sect_64));
-		sect_elem->current = sect[i];
+		sect_elem->elem = sect[i];
 		sect_elem->ordinal = *count_sect;
 		if (sect_last_list)
 			sect_last_list->next = sect_elem;
@@ -68,6 +68,7 @@ struct s_nm_64		*get_nm_64(char *content)
 	struct mach_header_64		*header;
 	struct load_command			*lc;
 	struct s_nm_64				*nm_64;
+	struct symtab_command		*sym_command;
 
 	header = (struct mach_header_64 *)content;
 	lc = (void *)content + sizeof(*header);
@@ -80,7 +81,11 @@ struct s_nm_64		*get_nm_64(char *content)
 	while (i++ < header->ncmds)
 	{
 		if (lc->cmd == LC_SYMTAB)
-			nm_64->sym_list = get_sym_list_64(content, (struct symtab_command *)lc);
+		{
+			sym_command = (struct symtab_command *)lc;
+			nm_64->sym_list = get_sym_list_64(content, sym_command);
+			nm_64->sym_list_size = sym_command->nsyms;
+		}
 		if (lc->cmd == LC_SEGMENT_64)
 			sect_last_list = add_sect_64_to_list(nm_64, (struct segment_command_64 *)lc, &count_sect, sect_last_list);
 		lc = (void *)lc + lc->cmdsize;
