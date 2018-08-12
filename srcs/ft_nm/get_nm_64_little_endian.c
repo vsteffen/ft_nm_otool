@@ -1,6 +1,7 @@
 #include "ft_nm_otool.h"
 
-struct s_sym_64			*get_sym_list_64(char *content, struct symtab_command *sym_command)
+struct s_sym_64			*get_sym_list_64_little_endian(void *ptr_header, \
+	struct symtab_command *sym_command)
 {
 	struct nlist_64		*sym_table_entry;
 	char				*sym_table_string;
@@ -11,8 +12,8 @@ struct s_sym_64			*get_sym_list_64(char *content, struct symtab_command *sym_com
 
 	sym_elem_first = NULL;
 	sym_elem_prev = NULL;
-	sym_table_entry = (void *)content + sym_command->symoff;
-	sym_table_string = (void *)content + sym_command->stroff;
+	sym_table_entry = ptr_header + sym_command->symoff;
+	sym_table_string = ptr_header + sym_command->stroff;
 	i = 0;
 	while (i < sym_command->nsyms)
 	{
@@ -32,7 +33,9 @@ struct s_sym_64			*get_sym_list_64(char *content, struct symtab_command *sym_com
 	return (sym_elem_first);
 }
 
-struct s_sect_64	*add_sect_64_to_list(struct s_nm_64 *nm_64, struct segment_command_64 *seg, size_t *count_sect, struct s_sect_64 *sect_last_list)
+struct s_sect_64	*add_sect_64_to_list_little_endian(struct s_nm_64 *nm_64, \
+	struct segment_command_64 *seg, size_t *count_sect, \
+	struct s_sect_64 *sect_last_list)
 {
 	struct s_sect_64	*sect_elem;
 	struct section_64	*sect;
@@ -40,6 +43,7 @@ struct s_sect_64	*add_sect_64_to_list(struct s_nm_64 *nm_64, struct segment_comm
 
 	i = 0;
 	sect = (void *)seg + sizeof(*seg);
+	sect_elem = NULL;
 	while(i < seg->nsects)
 	{
 		sect_elem = (struct s_sect_64 *)malloc(sizeof(struct s_sect_64));
@@ -60,7 +64,7 @@ struct s_sect_64	*add_sect_64_to_list(struct s_nm_64 *nm_64, struct segment_comm
 	return (sect_elem);
 }
 
-struct s_nm_64		*get_nm_64(char *content)
+struct s_nm_64		*get_nm_64_little_endian(void *ptr_header)
 {
 	size_t						i;
 	size_t						count_sect;
@@ -70,8 +74,8 @@ struct s_nm_64		*get_nm_64(char *content)
 	struct s_nm_64				*nm_64;
 	struct symtab_command		*sym_command;
 
-	header = (struct mach_header_64 *)content;
-	lc = (void *)content + sizeof(*header);
+	header = (struct mach_header_64 *)ptr_header;
+	lc = (struct load_command *)(ptr_header + sizeof(*header));
 	count_sect = 1;
 	i = 0;
 	sect_last_list = NULL;
@@ -83,11 +87,11 @@ struct s_nm_64		*get_nm_64(char *content)
 		if (lc->cmd == LC_SYMTAB)
 		{
 			sym_command = (struct symtab_command *)lc;
-			nm_64->sym_list = get_sym_list_64(content, sym_command);
+			nm_64->sym_list = get_sym_list_64_little_endian(ptr_header, sym_command);
 			nm_64->sym_list_size = sym_command->nsyms;
 		}
 		if (lc->cmd == LC_SEGMENT_64)
-			sect_last_list = add_sect_64_to_list(nm_64, (struct segment_command_64 *)lc, &count_sect, sect_last_list);
+			sect_last_list = add_sect_64_to_list_little_endian(nm_64, (struct segment_command_64 *)lc, &count_sect, sect_last_list);
 		lc = (void *)lc + lc->cmdsize;
 	}
 	return (nm_64);

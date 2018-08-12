@@ -35,11 +35,13 @@ HPATH 	=	-I $(ROOT)/includes -I $(LIBFT)/includes
 NM 		= 	ft_nm
 NM_SRC	=	$(NM)/ft_nm.c \
 			$(NM)/nlist_functions.c \
-			$(NM)/get_nm_32.c \
+			$(NM)/get_nm_32_little_endian.c \
+			$(NM)/get_nm_32_big_endian.c \
 			$(NM)/print_nm_32.c \
 			$(NM)/symbole_table_32.c \
 			$(NM)/sort_32.c \
-			$(NM)/get_nm_64.c \
+			$(NM)/get_nm_64_little_endian.c \
+			$(NM)/get_nm_64_big_endian.c \
 			$(NM)/print_nm_64.c \
 			$(NM)/symbole_table_64.c \
 			$(NM)/sort_64.c
