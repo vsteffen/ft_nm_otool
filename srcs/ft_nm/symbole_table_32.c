@@ -2,19 +2,19 @@
 
 // CHEAT SHEET
 
-// debug -> mask N_STAB on n_type
-// external -> mask N_EXT on n_type
-// private external -> mask N_PEXT on n_type
-// non external -> mask N_EXT and N_PEXT on n_type
+// debug -> mask N_STAB (1110 0000) on n_type
+// external -> mask N_EXT (0000 0001) on n_type
+// private external -> mask N_PEXT (0001 0000) on n_type
+// non external -> mask N_EXT (0000 0001) and N_PEXT (0001 0000) on n_type
 
-// Get true type with mask N_TYPE on n_type
+// Get true type with mask N_TYPE (0000 1110) on n_type
 // undefined -> mask N_UNDF with N_TYPE
 // absolute -> mask N_ABS with N_TYPE
 // indirect -> mask N_INDR with N_TYPE
 // section -> mask N_SECT with N_TYPE
 // common -> masks N_UNDF and N_EXT with n_value > 0
 
-int8_t		iter_sym_table_and_print_32(struct s_nm_32 *nm_32)
+int8_t		iter_sym_table_and_print_32(struct s_nm_32 *nm_32, int8_t endian)
 {
 	struct s_sym_32		*sym;
 	struct s_sect_32	*sect;
@@ -24,12 +24,13 @@ int8_t		iter_sym_table_and_print_32(struct s_nm_32 *nm_32)
 	sym = nm_32->sym_list;
 	while (sym)
 	{
+		// ft_printf("  n_type [%.8r]  ", sym->elem.n_type);
 		stab_ext_p_local = get_location(sym->elem.n_type);
 		real_type = (sym->elem.n_type & N_TYPE);
 		if (stab_ext_p_local > 0)
 		{
 			if (real_type != N_UNDF)
-				ft_printf("%08llx", sym->elem.n_value);
+				ft_printf("%08llx", (endian) ? endian_swap_int32(sym->elem.n_value) : sym->elem.n_value);
 			else
 				ft_putstr("        ");
 			// if (stab_ext_p_local == 2 && (real_type & N_UNDF) == N_UNDF && sym->elem.n_value > 0) // Detect common
@@ -54,16 +55,14 @@ int8_t		iter_sym_table_and_print_32(struct s_nm_32 *nm_32)
 				else
 					ft_printf(" %c ", get_correct_letter('S', stab_ext_p_local));
 			}
-			else if ((real_type & N_UNDF) == N_UNDF) // detect undefined
-			{
-					ft_printf(" %c ", get_correct_letter('U', stab_ext_p_local));
-			}
 			else if ((real_type & N_ABS) == N_ABS) // detect absolute
 				ft_printf(" %c ", get_correct_letter('A', stab_ext_p_local));
 			else if ((real_type & N_PBUD) == N_PBUD)
-					ft_printf(" u "); //, get_correct_letter('U', stab_ext_p_local));
+				ft_printf(" u "); //, get_correct_letter('U', stab_ext_p_local));
 			else if ((real_type & N_INDR) == N_INDR) // detect indirect
 				ft_printf(" %c ", get_correct_letter('I', stab_ext_p_local));
+			else if ((real_type & N_UNDF) == N_UNDF) // detect undefined
+				ft_printf(" %c ", get_correct_letter('U', stab_ext_p_local));
 			else
 			{
 				ft_putstr("ft_nm: Unknown symbol table type\n");

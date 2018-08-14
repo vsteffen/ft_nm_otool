@@ -45,6 +45,7 @@ typedef struct			s_nm_64 {
 	struct s_sym_64		*sym_list;
 	struct s_sect_64	*sect_list;
 	size_t				sym_list_size;
+	uint32_t			reserved32;
 }						t_nm_64;
 
 void					print_sections_32(struct s_sect_32 *sect_list);
@@ -56,19 +57,20 @@ void					print_sections_64_deprecated(struct segment_command_64 *seg);
 void					print_segments_64_deprecated(char *content);
 void					print_symboles_64(struct s_sym_64 *sym_list);
 
-int8_t					iter_sym_table_and_print_32(struct s_nm_32 *nm_32);
+int8_t					iter_sym_table_and_print_32(struct s_nm_32 *nm_32, int8_t endian);
 int8_t					iter_sym_table_and_print_64(struct s_nm_64 *nm_64);
 
-int						endian_swap_int(unsigned int x);
+int32_t					endian_swap_int32(uint32_t x);
+int64_t					endian_swap_int64(uint64_t x);
 
 int8_t					get_location(int8_t n_type);
 char					get_correct_letter(char letter, int8_t stab_ext_p_local);
 struct s_sect_32		*get_section_32(struct s_sect_32 *sect_list, uint32_t ordinal);
 struct s_sect_64		*get_section_64(struct s_sect_64 *sect_list, uint32_t ordinal);
 
-// struct s_nm_32			*get_nm_32(void *ptr_header, int8_t endian);
-struct s_nm_32			*get_nm_32_big_endian(void *ptr_header);
-struct s_nm_32			*get_nm_32_little_endian(void *ptr_header);
+struct s_nm_32			*get_nm_32(void *ptr_header, int8_t endian);
+// struct s_nm_32			*get_nm_32_big_endian(void *ptr_header);
+// struct s_nm_32			*get_nm_32_little_endian(void *ptr_header);
 // struct s_nm_64			*get_nm_64(void *ptr_header, int8_t endian);
 struct s_nm_64			*get_nm_64_big_endian(void *ptr_header);
 struct s_nm_64			*get_nm_64_little_endian(void *ptr_header);

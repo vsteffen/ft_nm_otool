@@ -1,25 +1,36 @@
 #include "ft_nm_otool.h"
 
-struct s_sym_32			*get_sym_list_32_little_endian(void *ptr_header, \
-	struct symtab_command *sym_command)
+struct s_sym_32			*get_sym_list_32(void *ptr_header, \
+	struct symtab_command *sym_command, int8_t endian)
 {
 	struct nlist		*sym_table_entry;
 	char				*sym_table_string;
 	struct s_sym_32		*sym_elem;
 	struct s_sym_32		*sym_elem_first;
 	struct s_sym_32		*sym_elem_prev;
+	uint32_t			sym_command_nsyms;
 	size_t				i;
 
 	sym_elem_first = NULL;
 	sym_elem_prev = NULL;
-	sym_table_entry = ptr_header + sym_command->symoff;
-	sym_table_string = ptr_header + sym_command->stroff;
+	if (endian)
+	{
+		sym_table_entry = ptr_header + endian_swap_int32(sym_command->symoff);
+		sym_table_string = ptr_header + endian_swap_int32(sym_command->stroff);
+		sym_command_nsyms = endian_swap_int32(sym_command->nsyms);
+	}
+	else
+	{
+		sym_table_entry = ptr_header + sym_command->symoff;
+		sym_table_string = ptr_header + sym_command->stroff;
+		sym_command_nsyms = sym_command->nsyms;
+	}
 	i = 0;
-	while (i < sym_command->nsyms)
+	while (i < sym_command_nsyms)
 	{
 		sym_elem = (struct s_sym_32 *)malloc(sizeof(struct s_sym_32));
 		sym_elem->elem = sym_table_entry[i];
-		sym_elem->sym_table_string = sym_table_string + sym_table_entry[i].n_un.n_strx;
+		sym_elem->sym_table_string = (endian) ? sym_table_string + endian_swap_int32(sym_table_entry[i].n_un.n_strx) : sym_table_string + sym_table_entry[i].n_un.n_strx;
 		sym_elem->order = i;
 		if (i == 0)
 			sym_elem_first = sym_elem;
@@ -33,18 +44,20 @@ struct s_sym_32			*get_sym_list_32_little_endian(void *ptr_header, \
 	return (sym_elem_first);
 }
 
-struct s_sect_32	*add_sect_32_to_list_little_endian(struct s_nm_32 *nm_32,
+struct s_sect_32	*add_sect_32_to_list(struct s_nm_32 *nm_32,
 	struct segment_command *seg, size_t *count_sect, \
-	struct s_sect_32 *sect_last_list)
+	struct s_sect_32 *sect_last_list, int8_t endian)
 {
 	struct s_sect_32	*sect_elem;
 	struct section		*sect;
 	size_t				i;
+	uint32_t			seg_nsects;
 
 	i = 0;
 	sect = (void *)seg + sizeof(*seg);
 	sect_elem = NULL;
-	while(i < seg->nsects)
+	seg_nsects = (endian) ? endian_swap_int32(seg->nsects) : seg->nsects;
+	while(i < seg_nsects)
 	{
 		sect_elem = (struct s_sect_32 *)malloc(sizeof(struct s_sect_32));
 		sect_elem->elem = sect[i];
@@ -64,7 +77,7 @@ struct s_sect_32	*add_sect_32_to_list_little_endian(struct s_nm_32 *nm_32,
 	return (sect_elem);
 }
 
-struct s_nm_32		*get_nm_32_little_endian(void *ptr_header)
+struct s_nm_32		*get_nm_32(void *ptr_header, int8_t endian)
 {
 	size_t						i;
 	size_t						count_sect;
@@ -73,8 +86,11 @@ struct s_nm_32		*get_nm_32_little_endian(void *ptr_header)
 	struct load_command			*lc;
 	struct s_nm_32				*nm_32;
 	struct symtab_command		*sym_command;
+	uint32_t					header_ncmds;
+	uint32_t					lc_cmd;
 
 	header = (struct mach_header *)ptr_header;
+	header_ncmds = (endian) ? endian_swap_int32(header->ncmds) : header->ncmds;
 	lc = (struct load_command *)(ptr_header + sizeof(*header));
 	count_sect = 1;
 	i = 0;
@@ -82,19 +98,20 @@ struct s_nm_32		*get_nm_32_little_endian(void *ptr_header)
 	nm_32 = (struct s_nm_32*)malloc(sizeof(struct s_nm_32));
 	nm_32->sym_list = NULL;
 	nm_32->sect_list = NULL;
-	while (i++ < header->ncmds)
+	while (i++ < header_ncmds)
 	{
-		if (lc->cmd == LC_SYMTAB)
+		lc_cmd = (endian) ? endian_swap_int32(lc->cmd) : lc->cmd;
+		if (lc_cmd == LC_SYMTAB)
 		{
 			sym_command = (struct symtab_command *)lc;
-			nm_32->sym_list = get_sym_list_32_little_endian(ptr_header, sym_command);
-			nm_32->sym_list_size = sym_command->nsyms;
+			nm_32->sym_list = get_sym_list_32(ptr_header, sym_command, endian);
+			nm_32->sym_list_size = (endian) ? endian_swap_int32(sym_command->nsyms) : sym_command->nsyms;
 		}
-		if (lc->cmd == LC_SEGMENT)
+		if (lc_cmd == LC_SEGMENT)
 		{
-			sect_last_list = add_sect_32_to_list_little_endian(nm_32, (struct segment_command *)lc, &count_sect, sect_last_list);
+			sect_last_list = add_sect_32_to_list(nm_32, (struct segment_command *)lc, &count_sect, sect_last_list, endian);
 		}
-		lc = (void *)lc + lc->cmdsize;
+		lc = (endian) ? (void *)lc + endian_swap_int32(lc->cmdsize) : (void *)lc + lc->cmdsize;
 	}
 	return (nm_32);
 }

@@ -4,11 +4,12 @@ int8_t		get_location(int8_t n_type)
 {
 	if ((n_type & N_STAB) > 0)
 		return (0); // symbol is for debugging
-	if ((n_type & N_EXT) != N_EXT && (n_type & N_PEXT) != N_PEXT)
+	// if ((n_type & N_EXT) != N_EXT && (n_type & N_PEXT) != N_PEXT)
+	if ((n_type & N_EXT) != N_EXT)
 		return (1); // symbol is non external
-	if ((n_type & N_EXT) == N_EXT)
-		return (2); // symbol is external
-	return (3); // symbol is private external
+	// if ((n_type & N_EXT) == N_EXT)
+	return (2); // symbol is external
+	// return (3); // symbol is private external
 }
 
 char		get_correct_letter(char letter, int8_t stab_ext_p_local)

@@ -8,20 +8,6 @@ int8_t		exit_nm(char *path, char *message)
 	return (EXIT_FAILURE);
 }
 
-int8_t		handle_32_big_endian(void *ptr_header)
-{
-	struct s_nm_32				*nm_32;
-
-	ft_printf("Handle 32 bits big endian\n");
-	// print_segments_32_deprecated(content);
-	nm_32 = get_nm_32_big_endian(ptr_header);
-	sort_nm_32(nm_32, 0);
-	if (nm_32->sym_list)
-		return (iter_sym_table_and_print_32(nm_32));
-	ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
-	return (-1);
-}
-
 int8_t		handle_64_big_endian(void *ptr_header)
 {
 	struct s_nm_64				*nm_64;
@@ -36,16 +22,16 @@ int8_t		handle_64_big_endian(void *ptr_header)
 	return (-1);
 }
 
-int8_t		handle_32_little_endian(void *ptr_header)
+int8_t		handle_32(void *ptr_header, int8_t endian)
 {
 	struct s_nm_32				*nm_32;
 
-	ft_printf("Handle 32 bits little endian\n");
+	// ft_printf("Handle 32 bits in %s endian\n", (endian) ? "little" : "big");
 	// print_segments_32_deprecated(content);
-	nm_32 = get_nm_32_little_endian(ptr_header);
+	nm_32 = get_nm_32(ptr_header, endian);
 	sort_nm_32(nm_32, 0);
 	if (nm_32->sym_list)
-		return (iter_sym_table_and_print_32(nm_32));
+		return (iter_sym_table_and_print_32(nm_32, endian));
 	ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
 	return (-1);
 }
@@ -85,11 +71,42 @@ int8_t		match_and_use_magic_number(void *ptr_header, uint32_t magic_number, char
 	else if (magic_number == MH_CIGAM_64)
 		return (handle_64_little_endian(ptr_header));
 	else if (magic_number == MH_MAGIC)
-		return (handle_32_big_endian(ptr_header));
+		return (handle_32(ptr_header, 0));
 	else if (magic_number == MH_CIGAM)
-		return (handle_32_little_endian(ptr_header));
+		return (handle_32(ptr_header, 1));
 	ft_printf("ft_nm: %s: The file was not recognized as a valid object file\n", path);
 	return (-2);
+}
+
+char		*get_architecture_name(cpu_type_t cputype)
+{
+	if (cputype == CPU_TYPE_VAX)
+		return ("VAX");
+	if (cputype == CPU_TYPE_MC680x0)
+		return ("MC680x0");
+	if (cputype == CPU_TYPE_X86 || cputype == CPU_TYPE_I386)
+		return ("i386");
+	if (cputype == CPU_TYPE_X86_64)
+		return ("x86_64");
+	if (cputype == CPU_TYPE_MC98000)
+		return ("MC98000");
+	if (cputype == CPU_TYPE_HPPA)
+		return ("HPPA");
+	if (cputype == CPU_TYPE_ARM)
+		return ("ARM");
+	if (cputype == CPU_TYPE_ARM64)
+		return ("ARM64");
+	if (cputype == CPU_TYPE_MC88000)
+		return ("MC88000");
+	if (cputype == CPU_TYPE_SPARC)
+		return ("SPARC");
+	if (cputype == CPU_TYPE_I860)
+		return ("i860");
+	if (cputype == CPU_TYPE_POWERPC)
+		return ("ppc");
+	if (cputype == CPU_TYPE_POWERPC64)
+		return ("ppc64");
+	return ("Unknown");
 }
 
 int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, char *path)
@@ -98,34 +115,22 @@ int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, char *path)
 	struct fat_arch		*fat_arch_32;
 	uint32_t			nb_arch;
 	uint32_t			offset_arch = 0;
-	uint32_t		magic_number;
+	uint32_t			magic_number;
 	size_t				i;
 
 	fat_header = (struct fat_header*)ptr_header;
 	fat_arch_32 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header));
-	if (endian == 1)
-		nb_arch = endian_swap_int32(fat_header->nfat_arch);
-	else
-		nb_arch = fat_header->nfat_arch;
+	nb_arch = (endian) ? endian_swap_int32(fat_header->nfat_arch) : fat_header->nfat_arch;
 	i = 0;
-	ft_printf("ft_nm: fat_header 32 bits [%X] with [%zu] architectures\n", (endian == 0) ? FAT_MAGIC : FAT_CIGAM, nb_arch);
+	// ft_printf("ft_nm: fat_header 32 bits [%X] with [%zu] architectures\n", (endian == 0) ? FAT_MAGIC : FAT_CIGAM, nb_arch);
 	while (i < nb_arch)
 	{
 		fat_arch_32 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header) + sizeof(struct fat_arch) * i);
-		// ft_printf("Offset [%x]\n", fat_arch_32->offset);
-		if (endian == 1)
-			offset_arch = endian_swap_int32(fat_arch_32->offset);
-		else
-			offset_arch = fat_arch_32->offset;
-		// offset_arch = ft_hexstr_to_int64_t((const unsigned char *)ft_int64_to_array(offset_arch));
-		// ft_printf("New Offset [%x]\n", offset_arch);
+		ft_printf("\n%s (for architecture %s):\n", path, get_architecture_name((endian) ? endian_swap_int32(fat_arch_32->cputype) : fat_arch_32->cputype));
+		offset_arch = (endian) ? endian_swap_int32(fat_arch_32->offset) : fat_arch_32->offset;
 		magic_number = *(uint32_t *)(ptr_header + offset_arch);
-		// ft_printf("fat_arch->offset [%x] - offset_arch [%x]\n", fat_arch_32->offset, offset_arch);
-		ft_printf(" └─> Magic_number [%X] for architecture n˚[%X]\n", magic_number, i);
-		// ft_printf("ptr_header [%p] and struct address [%p]\n", ptr_header, ptr_header + fat_arch_32->offset);
-		// fat_arch_32 = (struct fat_arch*)((void*)fat_arch_32 + sizeof(struct fat_arch));
+		// ft_printf(" └─> Magic_number [%X] for architecture n˚[%X]\n", magic_number, i);
 		match_and_use_magic_number(ptr_header + offset_arch, magic_number, path);
-		ft_putchar('\n');
 		i++;
 	}
 	return (1);
