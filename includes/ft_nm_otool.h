@@ -58,7 +58,7 @@ void					print_segments_64_deprecated(char *content);
 void					print_symboles_64(struct s_sym_64 *sym_list);
 
 int8_t					iter_sym_table_and_print_32(struct s_nm_32 *nm_32, int8_t endian);
-int8_t					iter_sym_table_and_print_64(struct s_nm_64 *nm_64);
+int8_t					iter_sym_table_and_print_64(struct s_nm_64 *nm_64, int8_t endian);
 
 int32_t					endian_swap_int32(uint32_t x);
 int64_t					endian_swap_int64(uint64_t x);
@@ -72,8 +72,9 @@ struct s_nm_32			*get_nm_32(void *ptr_header, int8_t endian);
 // struct s_nm_32			*get_nm_32_big_endian(void *ptr_header);
 // struct s_nm_32			*get_nm_32_little_endian(void *ptr_header);
 // struct s_nm_64			*get_nm_64(void *ptr_header, int8_t endian);
-struct s_nm_64			*get_nm_64_big_endian(void *ptr_header);
-struct s_nm_64			*get_nm_64_little_endian(void *ptr_header);
+struct s_nm_64			*get_nm_64(void *ptr_header, int8_t endian);
+// struct s_nm_64			*get_nm_64_big_endian(void *ptr_header);
+// struct s_nm_64			*get_nm_64_little_endian(void *ptr_header);
 
 void					sort_nm_32(struct s_nm_32 *nm_32, int8_t sort_selected);
 void					sort_nm_64(struct s_nm_64 *nm_64, int8_t sort_selected);

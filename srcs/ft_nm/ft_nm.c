@@ -8,16 +8,16 @@ int8_t		exit_nm(char *path, char *message)
 	return (EXIT_FAILURE);
 }
 
-int8_t		handle_64_big_endian(void *ptr_header)
+int8_t		handle_64(void *ptr_header, int8_t endian)
 {
 	struct s_nm_64				*nm_64;
 
-	ft_printf("Handle 64 bits big endian\n");
+	// ft_printf("Handle 64 bits in %s endian\n", (endian) ? "little" : "big");
 	// print_segments_64_deprecated(content);
-	nm_64 = get_nm_64_big_endian(ptr_header);
+	nm_64 = get_nm_64(ptr_header, endian);
 	sort_nm_64(nm_64, 0);
 	if (nm_64->sym_list)
-		return (iter_sym_table_and_print_64(nm_64));
+		return (iter_sym_table_and_print_64(nm_64, endian));
 	ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
 	return (-1);
 }
@@ -32,20 +32,6 @@ int8_t		handle_32(void *ptr_header, int8_t endian)
 	sort_nm_32(nm_32, 0);
 	if (nm_32->sym_list)
 		return (iter_sym_table_and_print_32(nm_32, endian));
-	ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
-	return (-1);
-}
-
-int8_t		handle_64_little_endian(void *ptr_header)
-{
-	struct s_nm_64				*nm_64;
-
-	ft_printf("Handle 64 bits little endian\n");
-	// print_segments_64_deprecated(content);
-	nm_64 = get_nm_64_little_endian(ptr_header);
-	sort_nm_64(nm_64, 0);
-	if (nm_64->sym_list)
-		return (iter_sym_table_and_print_64(nm_64));
 	ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
 	return (-1);
 }
@@ -67,9 +53,9 @@ int64_t		endian_swap_int64(uint64_t x)
 int8_t		match_and_use_magic_number(void *ptr_header, uint32_t magic_number, char *path)
 {
 	if (magic_number == MH_MAGIC_64)
-		return (handle_64_big_endian(ptr_header));
+		return (handle_64(ptr_header, 0));
 	else if (magic_number == MH_CIGAM_64)
-		return (handle_64_little_endian(ptr_header));
+		return (handle_64(ptr_header, 1));
 	else if (magic_number == MH_MAGIC)
 		return (handle_32(ptr_header, 0));
 	else if (magic_number == MH_CIGAM)

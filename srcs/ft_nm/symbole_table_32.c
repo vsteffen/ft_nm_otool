@@ -24,7 +24,6 @@ int8_t		iter_sym_table_and_print_32(struct s_nm_32 *nm_32, int8_t endian)
 	sym = nm_32->sym_list;
 	while (sym)
 	{
-		// ft_printf("  n_type [%.8r]  ", sym->elem.n_type);
 		stab_ext_p_local = get_location(sym->elem.n_type);
 		real_type = (sym->elem.n_type & N_TYPE);
 		if (stab_ext_p_local > 0)
