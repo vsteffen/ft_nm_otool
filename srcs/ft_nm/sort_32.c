@@ -1,17 +1,35 @@
 #include "ft_nm_otool.h"
 
-static int8_t				sort_alphabetically(const char *str1, const char *str2)
+static int8_t				sort_alphabetically(struct s_sym_32 *elem1, struct s_sym_32 *elem2, int8_t endian)
 {
 	int 	cmp;
 
-	cmp = ft_strcmp(str1, str2);
+	cmp = ft_strcmp(elem1->sym_table_string, elem2->sym_table_string);
 	if (cmp >= 0)
+	{
+		if (cmp == 0)
+		{
+			if (endian)
+			{
+				if (endian_swap_int32(elem1->elem.n_value) < endian_swap_int32(elem2->elem.n_value))
+					return (1);
+			}
+			else
+			{
+				if (elem1->elem.n_value < elem2->elem.n_value)
+					return (1);
+			}
+		}
 		return (0);
+	}
 	return (1);
 }
 
+
 static struct s_sym_32		*sorted_merge(struct s_sym_32* elem1, \
-	struct s_sym_32* elem2, int8_t (*sort_selected)(const char *, const char *))
+	struct s_sym_32* elem2, \
+	int8_t (*sort_selected)(struct s_sym_32*, struct s_sym_32*, int8_t endian), \
+	int8_t endian)
 {
 	struct s_sym_32		*result;
 
@@ -20,15 +38,15 @@ static struct s_sym_32		*sorted_merge(struct s_sym_32* elem1, \
 	    return (elem2);
 	else if (elem2 == NULL)
 	    return (elem1);
-	if ((*sort_selected)(elem1->sym_table_string, elem2->sym_table_string))
+	if ((*sort_selected)(elem1, elem2, endian))
 	{
 	    result = elem1;
-	    result->next = sorted_merge(elem1->next, elem2, sort_selected);
+	    result->next = sorted_merge(elem1->next, elem2, sort_selected, endian);
 	}
 	else
 	{
 	    result = elem2;
-	    result->next = sorted_merge(elem1, elem2->next, sort_selected);
+	    result->next = sorted_merge(elem1, elem2->next, sort_selected, endian);
 	}
 	return(result);
 }
@@ -55,7 +73,9 @@ static void				front_back_split(struct s_sym_32 *source, \
     slow->next = NULL;
 }
 
-void merge_sort_32(struct s_sym_32 **head_ref, int8_t (*sort_selected)(const char *, const char *))
+void merge_sort_32(struct s_sym_32 **head_ref, \
+	int8_t (*sort_selected)(struct s_sym_32*, struct s_sym_32*, int8_t endian), \
+	int8_t endian)
 {
 	struct s_sym_32		*head;
 	struct s_sym_32		*elem1;
@@ -65,13 +85,13 @@ void merge_sort_32(struct s_sym_32 **head_ref, int8_t (*sort_selected)(const cha
 	if ((head == NULL) || (head->next == NULL))
 	    return ;
 	front_back_split(head, &elem1, &elem2);
-	merge_sort_32(&elem1, sort_selected);
-	merge_sort_32(&elem2, sort_selected);
-	*head_ref = sorted_merge(elem1, elem2, sort_selected);
+	merge_sort_32(&elem1, sort_selected, endian);
+	merge_sort_32(&elem2, sort_selected, endian);
+	*head_ref = sorted_merge(elem1, elem2, sort_selected, endian);
 }
 
-void		sort_nm_32(struct s_nm_32 *nm_32, int8_t sort_selected)
+void		sort_nm_32(struct s_nm_32 *nm_32, int8_t sort_selected, int8_t endian)
 {
 	if (sort_selected == 0)
-		merge_sort_32(&(nm_32->sym_list), &sort_alphabetically);
+		merge_sort_32(&(nm_32->sym_list), &sort_alphabetically, endian);
 }

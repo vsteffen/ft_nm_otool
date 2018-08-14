@@ -15,7 +15,7 @@ int8_t		handle_64(void *ptr_header, int8_t endian)
 	// ft_printf("Handle 64 bits in %s endian\n", (endian) ? "little" : "big");
 	// print_segments_64_deprecated(content);
 	nm_64 = get_nm_64(ptr_header, endian);
-	sort_nm_64(nm_64, 0);
+	sort_nm_64(nm_64, 0, endian);
 	if (nm_64->sym_list)
 		return (iter_sym_table_and_print_64(nm_64, endian));
 	ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
@@ -29,7 +29,7 @@ int8_t		handle_32(void *ptr_header, int8_t endian)
 	// ft_printf("Handle 32 bits in %s endian\n", (endian) ? "little" : "big");
 	// print_segments_32_deprecated(content);
 	nm_32 = get_nm_32(ptr_header, endian);
-	sort_nm_32(nm_32, 0);
+	sort_nm_32(nm_32, 0, endian);
 	if (nm_32->sym_list)
 		return (iter_sym_table_and_print_32(nm_32, endian));
 	ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
