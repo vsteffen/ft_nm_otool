@@ -122,6 +122,42 @@ int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, char *path)
 	return (1);
 }
 
+int8_t		handle_fat_header_64(void *ptr_header, int8_t endian, char *path)
+{
+	struct fat_header	*fat_header;
+	struct fat_arch		*fat_arch_64;
+	uint32_t			nb_arch;
+	uint32_t			offset_arch = 0;
+	uint32_t			magic_number;
+	size_t				i;
+
+	fat_header = (struct fat_header*)ptr_header;
+	fat_arch_64 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header));
+	nb_arch = (endian) ? endian_swap_int32(fat_header->nfat_arch) : fat_header->nfat_arch;
+	i = 0;
+	// ft_printf("ft_nm: fat_header 32 bits [%X] with [%zu] architectures\n", (endian == 0) ? FAT_MAGIC : FAT_CIGAM, nb_arch);
+	while (i < nb_arch)
+	{
+		fat_arch_64 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header) + sizeof(struct fat_arch) * i);
+		ft_printf("\n%s (for architecture %s):\n", path, get_architecture_name((endian) ? endian_swap_int32(fat_arch_64->cputype) : fat_arch_64->cputype));
+		offset_arch = (endian) ? endian_swap_int64(fat_arch_64->offset) : fat_arch_64->offset;
+		magic_number = *(uint32_t *)(ptr_header + offset_arch);
+		// ft_printf(" └─> Magic_number [%X] for architecture n˚[%X]\n", magic_number, i);
+		match_and_use_magic_number(ptr_header + offset_arch, magic_number, path);
+		i++;
+	}
+	return (1);
+}
+
+int8_t		handle_ar(void *ptr_header, char *path)
+{
+	struct	ar_hdr	*ar_hdr;
+
+	(void)path;
+	(void)path;
+	return (1);
+}
+
 int8_t		analyse_magic_number(void *ptr_header, char *path)
 {
 	uint32_t		magic_number;
@@ -132,15 +168,17 @@ int8_t		analyse_magic_number(void *ptr_header, char *path)
 		return (-1);
 	}
 	magic_number = *(uint32_t *)ptr_header;
+	ft_printf("MAGIC NUMBER [%x] \n", *(uint64_t *)ptr_header);
 	if (magic_number == FAT_MAGIC)
 		return (handle_fat_header_32(ptr_header, 0, path));
 	else if (magic_number == FAT_CIGAM)
 		return (handle_fat_header_32(ptr_header, 1, path));
-	else if (magic_number == FAT_MAGIC_64 || magic_number == FAT_CIGAM_64)
-	{
-		ft_printf("ft_nm: %s: There is an fat 64 header ... a big one\n", path);
-		return (1);
-	}
+	else if (magic_number == AR_MAGIC)
+		return (handle_ar(ptr_header, path));
+	if (magic_number == FAT_MAGIC_64)
+		return (handle_fat_header_64(ptr_header, 0, path));
+	else if (magic_number == FAT_CIGAM_64)
+		return (handle_fat_header_64(ptr_header, 1, path));
 	return (match_and_use_magic_number(ptr_header, magic_number, path));
 }
 

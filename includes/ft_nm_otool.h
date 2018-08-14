@@ -7,7 +7,10 @@
 # include <mach-o/fat.h>
 # include <mach-o/loader.h>
 # include <mach-o/nlist.h>
+# include <ar.h>
 # include <fcntl.h>
+
+# define AR_MAGIC 0x72613c21
 
 typedef struct			s_sym_32 {
 	struct nlist		elem;
