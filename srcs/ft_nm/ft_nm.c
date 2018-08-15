@@ -8,28 +8,28 @@ int8_t		exit_nm(char *path, char *message)
 	return (EXIT_FAILURE);
 }
 
-int8_t		handle_64(void *ptr_header, int8_t endian)
+int8_t		handle_64(void *ptr_header, int8_t endian, int8_t flag[3])
 {
 	struct s_nm_64				*nm_64;
 
 	// ft_printf("Handle 64 bits in %s endian\n", (endian) ? "little" : "big");
 	// print_segments_64_deprecated(content);
 	nm_64 = get_nm_64(ptr_header, endian);
-	sort_nm_64(nm_64, 0, endian);
+	sort_nm_64(nm_64, endian, flag);
 	if (nm_64->sym_list)
 		return (iter_sym_table_and_print_64(nm_64, endian));
 	ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
 	return (-1);
 }
 
-int8_t		handle_32(void *ptr_header, int8_t endian)
+int8_t		handle_32(void *ptr_header, int8_t endian, int8_t flag[3])
 {
 	struct s_nm_32				*nm_32;
 
 	// ft_printf("Handle 32 bits in %s endian\n", (endian) ? "little" : "big");
 	// print_segments_32_deprecated(content);
 	nm_32 = get_nm_32(ptr_header, endian);
-	sort_nm_32(nm_32, 0, endian);
+	sort_nm_32(nm_32, endian, flag);
 	if (nm_32->sym_list)
 		return (iter_sym_table_and_print_32(nm_32, endian));
 	ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
@@ -50,16 +50,16 @@ int64_t		endian_swap_int64(uint64_t x)
 	return (x);
 }
 
-int8_t		match_and_use_magic_number(void *ptr_header, uint32_t magic_number, char *path)
+int8_t		match_and_use_magic_number(void *ptr_header, uint32_t magic_number, char *path, int8_t flag[3])
 {
 	if (magic_number == MH_MAGIC_64)
-		return (handle_64(ptr_header, 0));
+		return (handle_64(ptr_header, 0, flag));
 	else if (magic_number == MH_CIGAM_64)
-		return (handle_64(ptr_header, 1));
+		return (handle_64(ptr_header, 1, flag));
 	else if (magic_number == MH_MAGIC)
-		return (handle_32(ptr_header, 0));
+		return (handle_32(ptr_header, 0, flag));
 	else if (magic_number == MH_CIGAM)
-		return (handle_32(ptr_header, 1));
+		return (handle_32(ptr_header, 1, flag));
 	ft_printf("ft_nm: %s: The file was not recognized as a valid object file\n", path);
 	return (-2);
 }
@@ -95,12 +95,12 @@ char		*get_architecture_name(cpu_type_t cputype)
 	return ("Unknown");
 }
 
-int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, char *path)
+int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, char *path, int8_t flag[3])
 {
 	struct fat_header	*fat_header;
 	struct fat_arch		*fat_arch_32;
 	uint32_t			nb_arch;
-	uint32_t			offset_arch = 0;
+	uint32_t			offset_arch;
 	uint32_t			magic_number;
 	size_t				i;
 
@@ -116,18 +116,18 @@ int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, char *path)
 		offset_arch = (endian) ? endian_swap_int32(fat_arch_32->offset) : fat_arch_32->offset;
 		magic_number = *(uint32_t *)(ptr_header + offset_arch);
 		// ft_printf(" └─> Magic_number [%X] for architecture n˚[%X]\n", magic_number, i);
-		match_and_use_magic_number(ptr_header + offset_arch, magic_number, path);
+		match_and_use_magic_number(ptr_header + offset_arch, magic_number, path, flag);
 		i++;
 	}
 	return (1);
 }
 
-int8_t		handle_fat_header_64(void *ptr_header, int8_t endian, char *path)
+int8_t		handle_fat_header_64(void *ptr_header, int8_t endian, char *path, int8_t flag[3])
 {
 	struct fat_header	*fat_header;
 	struct fat_arch		*fat_arch_64;
 	uint32_t			nb_arch;
-	uint32_t			offset_arch = 0;
+	uint32_t			offset_arch;
 	uint32_t			magic_number;
 	size_t				i;
 
@@ -143,22 +143,24 @@ int8_t		handle_fat_header_64(void *ptr_header, int8_t endian, char *path)
 		offset_arch = (endian) ? endian_swap_int64(fat_arch_64->offset) : fat_arch_64->offset;
 		magic_number = *(uint32_t *)(ptr_header + offset_arch);
 		// ft_printf(" └─> Magic_number [%X] for architecture n˚[%X]\n", magic_number, i);
-		match_and_use_magic_number(ptr_header + offset_arch, magic_number, path);
+		match_and_use_magic_number(ptr_header + offset_arch, magic_number, path, flag);
 		i++;
 	}
 	return (1);
 }
 
-int8_t		handle_ar(void *ptr_header, char *path)
+int8_t		handle_ar(void *ptr_header, char *path, int8_t flag[3])
 {
-	struct	ar_hdr	*ar_hdr;
+	struct ar_hdr		*ar_hdr;
 
+	(void)ptr_header;
 	(void)path;
-	(void)path;
+	(void)ar_hdr;
+	(void)flag;
 	return (1);
 }
 
-int8_t		analyse_magic_number(void *ptr_header, char *path)
+int8_t		analyse_magic_number(void *ptr_header, char *path, int8_t flag[3])
 {
 	uint32_t		magic_number;
 
@@ -168,21 +170,20 @@ int8_t		analyse_magic_number(void *ptr_header, char *path)
 		return (-1);
 	}
 	magic_number = *(uint32_t *)ptr_header;
-	ft_printf("MAGIC NUMBER [%x] \n", *(uint64_t *)ptr_header);
 	if (magic_number == FAT_MAGIC)
-		return (handle_fat_header_32(ptr_header, 0, path));
+		return (handle_fat_header_32(ptr_header, 0, path, flag));
 	else if (magic_number == FAT_CIGAM)
-		return (handle_fat_header_32(ptr_header, 1, path));
+		return (handle_fat_header_32(ptr_header, 1, path, flag));
 	else if (magic_number == AR_MAGIC)
-		return (handle_ar(ptr_header, path));
+		return (handle_ar(ptr_header, path, flag));
 	if (magic_number == FAT_MAGIC_64)
-		return (handle_fat_header_64(ptr_header, 0, path));
+		return (handle_fat_header_64(ptr_header, 0, path, flag));
 	else if (magic_number == FAT_CIGAM_64)
-		return (handle_fat_header_64(ptr_header, 1, path));
-	return (match_and_use_magic_number(ptr_header, magic_number, path));
+		return (handle_fat_header_64(ptr_header, 1, path, flag));
+	return (match_and_use_magic_number(ptr_header, magic_number, path, flag));
 }
 
-int8_t		get_file_content(char *path, int ac)
+int8_t		get_file_content(char *path, int ac, int8_t flag[3])
 {
 	int				fd;
 	char			*content;
@@ -198,7 +199,7 @@ int8_t		get_file_content(char *path, int ac)
 		return (exit_nm(path, ": Can't map file\n"));
 	if (ac > 2)
 		ft_printf("\n%s:\n", path);
-	if (analyse_magic_number((void*)content, path) == -1)
+	if (analyse_magic_number((void*)content, path, flag) == -1)
 		return (EXIT_FAILURE);
 	if (munmap(content, file_stat.st_size) < 0)
 		return (exit_nm(path, ": Can't free memory allocated to map file\n"));
@@ -207,25 +208,60 @@ int8_t		get_file_content(char *path, int ac)
 	return (EXIT_SUCCESS);
 }
 
+int8_t		is_flag(char *arg)
+{
+	if (arg[0] != '-')
+		return (-1);
+	if (arg[1] == 'p' && arg[2] == '\0')
+		return (0);
+	if (arg[1] == 'r' && arg[2] == '\0')
+		return (1);
+	if (arg[1] == 'm' && arg[2] == '\0')
+		return (2);
+	return (-1);
+}
+
+void		get_flag(int8_t flag[3], int ac, char **av)
+{
+	int			i;
+	int8_t		res;
+
+	ft_bzero(flag, sizeof(int8_t) * 3);
+	i = 1;
+	while (i++ < ac)
+	{
+		if ((res = is_flag(av[i - 1])) != -1)
+			flag[res] = 1;
+	}
+}
+
 int			main(int ac, char **av)
 {
 	int			i;
 	int8_t		status;
 	int8_t		return_status;
+	int8_t		flag[3];
+	int8_t		arg_path_found;
 
 	if (ac == 1)
-	{
-		return (get_file_content("./a.out", 1));
-	}
+		return (get_file_content("./a.out", 1, flag));
 	else
 	{
-		i = 1;
+		arg_path_found = 0;
+		get_flag(flag, ac, av);
 		return_status = EXIT_SUCCESS;
+		i = 1;
 		while (i++ < ac)
 		{
-			if ((status = get_file_content(av[i - 1], ac)) == EXIT_FAILURE)
-				return_status = EXIT_FAILURE;
+			if (is_flag(av[i - 1]) == -1)
+			{
+				arg_path_found = 1;
+				if ((status = get_file_content(av[i - 1], ac, flag)) == EXIT_FAILURE)
+					return_status = EXIT_FAILURE;
+			}
 		}
+		if (arg_path_found == 0)
+			return (get_file_content("./a.out", 1, flag));
 		return (return_status);
 	}
 }

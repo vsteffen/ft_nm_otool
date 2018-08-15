@@ -25,6 +25,30 @@ static int8_t				sort_alphabetically(struct s_sym_32 *elem1, struct s_sym_32 *el
 	return (1);
 }
 
+static int8_t				sort_reverse(struct s_sym_32 *elem1, struct s_sym_32 *elem2, int8_t endian)
+{
+	int 	cmp;
+
+	cmp = ft_strcmp(elem1->sym_table_string, elem2->sym_table_string);
+	if (cmp < 0)
+	{
+		if (cmp == 0)
+		{
+			if (endian)
+			{
+				if (endian_swap_int32(elem1->elem.n_value) > endian_swap_int32(elem2->elem.n_value))
+					return (1);
+			}
+			else
+			{
+				if (elem1->elem.n_value > elem2->elem.n_value)
+					return (1);
+			}
+		}
+		return (0);
+	}
+	return (1);
+}
 
 static struct s_sym_32		*sorted_merge(struct s_sym_32* elem1, \
 	struct s_sym_32* elem2, \
@@ -90,8 +114,12 @@ void merge_sort_32(struct s_sym_32 **head_ref, \
 	*head_ref = sorted_merge(elem1, elem2, sort_selected, endian);
 }
 
-void		sort_nm_32(struct s_nm_32 *nm_32, int8_t sort_selected, int8_t endian)
+void		sort_nm_32(struct s_nm_32 *nm_32, int8_t endian, int8_t flag[3])
 {
-	if (sort_selected == 0)
+	if (flag[0] == 1)
+		return ;
+	if (flag[1] == 1)
+		merge_sort_32(&(nm_32->sym_list), &sort_reverse, endian);
+	else
 		merge_sort_32(&(nm_32->sym_list), &sort_alphabetically, endian);
 }

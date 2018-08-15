@@ -79,7 +79,7 @@ struct s_nm_64			*get_nm_64(void *ptr_header, int8_t endian);
 // struct s_nm_64			*get_nm_64_big_endian(void *ptr_header);
 // struct s_nm_64			*get_nm_64_little_endian(void *ptr_header);
 
-void					sort_nm_32(struct s_nm_32 *nm_32, int8_t sort_selected, int8_t endian);
-void					sort_nm_64(struct s_nm_64 *nm_64, int8_t sort_selected, int8_t endian);
+void					sort_nm_32(struct s_nm_32 *nm_32, int8_t endian, int8_t flag[3]);
+void					sort_nm_64(struct s_nm_64 *nm_64, int8_t endian, int8_t flag[3]);
 
 #endif
