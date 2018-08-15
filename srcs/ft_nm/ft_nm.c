@@ -218,7 +218,7 @@ int8_t		is_flag(char *arg)
 		return (1);
 	if (arg[1] == 'm' && arg[2] == '\0')
 		return (2);
-	return (-1);
+	return (-2);
 }
 
 void		get_flag(int8_t flag[3], int ac, char **av)
@@ -243,25 +243,22 @@ int			main(int ac, char **av)
 	int8_t		flag[3];
 	int8_t		arg_path_found;
 
-	if (ac == 1)
-		return (get_file_content("./a.out", 1, flag));
-	else
+	arg_path_found = 0;
+	get_flag(flag, ac, av);
+	return_status = EXIT_SUCCESS;
+	i = 1;
+	while (i++ < ac)
 	{
-		arg_path_found = 0;
-		get_flag(flag, ac, av);
-		return_status = EXIT_SUCCESS;
-		i = 1;
-		while (i++ < ac)
+		if ((status = is_flag(av[i - 1])) < 0)
 		{
-			if (is_flag(av[i - 1]) == -1)
-			{
-				arg_path_found = 1;
-				if ((status = get_file_content(av[i - 1], ac, flag)) == EXIT_FAILURE)
-					return_status = EXIT_FAILURE;
-			}
+			if (status == -2)
+				return (exit_nm("Unknown command line argument '", ft_strjoin(av[i - 1], "'\n")));
+			arg_path_found = 1;
+			if ((status = get_file_content(av[i - 1], ac, flag)) == EXIT_FAILURE)
+				return_status = EXIT_FAILURE;
 		}
-		if (arg_path_found == 0)
-			return (get_file_content("./a.out", 1, flag));
-		return (return_status);
 	}
+	if (arg_path_found == 0)
+		return (get_file_content("a.out", 1, flag));
+	return (return_status);
 }
