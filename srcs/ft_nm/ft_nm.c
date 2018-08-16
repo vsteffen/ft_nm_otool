@@ -149,18 +149,127 @@ int8_t		handle_fat_header_64(void *ptr_header, int8_t endian, char *path, int8_t
 	return (1);
 }
 
-int8_t		handle_ar(void *ptr_header, char *path, int8_t flag[3])
+void		*find_next_ar_header(void *ptr_header, size_t *i, size_t st_size)
 {
-	struct ar_hdr		*ar_hdr;
+	char		*file;
 
-	(void)ptr_header;
-	(void)path;
-	(void)ar_hdr;
-	(void)flag;
-	return (1);
+	file = (char *)ptr_header;
+	while (*i < st_size)
+	{
+		if (ft_strncmp(ARFMAG, file + *i, ft_strlen(ARFMAG)) == 0)
+		{
+			*i += 2;
+			return ((void*)ptr_header + *i);
+		}
+		(*i)++;
+	}
+	return (NULL);
 }
 
-int8_t		analyse_magic_number(void *ptr_header, char *path, int8_t flag[3])
+void		*find_begin_ar_file(void *ptr_header, size_t *i, size_t st_size)
+{
+	char		*file;
+
+	// ft_printf("i = [%zu]\n", *i);
+	file = (char *)ptr_header;
+	while (file[*i] != '\0')
+		(*i)++;
+	*i += sizeof(uint32_t) - (*i % sizeof(uint32_t));
+	while (*i < st_size)
+	{
+		if (*(uint32_t*)(ptr_header + *i) > 0)
+			return (ptr_header + *i);
+		*i += sizeof(uint32_t);
+	}
+	return (NULL);
+}
+
+uint64_t		get_ran_off_64(void *ptr_header, size_t *i, size_t st_size)
+{
+	*i += ft_strlen(SYMDEF);
+	*i += sizeof(uint64_t) - (*i % sizeof(uint64_t));
+	while (*i < st_size)
+	{
+		if (*(uint64_t*)(ptr_header + *i) > 0)
+		{
+			*i += sizeof(uint64_t);
+			return (*(uint64_t*)(ptr_header + *i) - sizeof(uint64_t));
+		}
+		*i += sizeof(uint64_t);
+	}
+	return (0);
+}
+
+uint32_t		get_ran_off_32(void *ptr_header, size_t *i, size_t st_size)
+{
+	*i += ft_strlen(SYMDEF);
+	*i += sizeof(uint32_t) - (*i % sizeof(uint32_t));
+	while (*i < st_size)
+	{
+		if (*(uint32_t*)(ptr_header + *i) > 0)
+		{
+			*i += sizeof(uint32_t);
+			return (*(uint32_t*)(ptr_header + *i - sizeof(uint32_t)));
+		}
+		*i += sizeof(uint32_t);
+	}
+	return (0);
+}
+
+int8_t		handle_ar(void *ptr_header, char *path, int8_t flag[3], size_t st_size)
+{
+	uint64_t			ran_off;
+	int8_t				is_32_ar;
+	size_t				i;
+	size_t				j;
+	size_t				symtab_pos;
+	// uint64_t			offset_file;
+	uint64_t			offset_file_tmp;
+
+	i = 0;
+	is_32_ar = 0;
+	find_next_ar_header(ptr_header, &i, st_size);
+	if (ft_strncmp(SYMDEF, ptr_header + i, ft_strlen(SYMDEF)) == 0)
+	{
+		is_32_ar = 1;
+		ran_off = get_ran_off_32(ptr_header, &i, st_size);
+	}
+	else if (ft_strncmp(SYMDEF_64, ptr_header + i, ft_strlen(SYMDEF_64)) == 0)
+		ran_off = get_ran_off_64(ptr_header, &i, st_size);
+	else
+		return (1);
+	if (ran_off == 0)
+		return (1);
+	// ft_printf("ran_off -> [%zu] and i [0x%zu]\n", ran_off, i);
+	symtab_pos = i;
+	j = i + ((is_32_ar) ? sizeof(uint32_t) : sizeof(uint64_t));
+	offset_file_tmp = (uint64_t) - 1;
+	while (j < ran_off + symtab_pos)
+	{
+		// ft_printf("j [%zu] -> offset -> [%X]\n", j, *(size_t*)(ptr_header + j));
+		i = (is_32_ar) ? *(uint32_t*)(ptr_header + j) : *(uint64_t*)(ptr_header + symtab_pos + j);
+		// ft_printf("New assign to i [0x%X]\n", i);
+		// ft_printf("New assign to i [0x%zu] | string -> [%s]\n", i, ptr_header + i);
+		find_next_ar_header(ptr_header, &i, st_size);
+		// ft_printf("Second new assign to i [0x%X]\n", i);
+		if (offset_file_tmp == (uint64_t) - 1 || i != offset_file_tmp)
+		{
+			offset_file_tmp = i;
+			ft_printf("\n%s(%s):\n", path, ptr_header + i);
+			find_begin_ar_file(ptr_header, &i, st_size);
+			match_and_use_magic_number(ptr_header + i, *(uint32_t *)(ptr_header + i), path, flag);
+		}
+		// ft_printf("Third new assign to i [0x%X]\n", i);
+		// exit(0);
+		// (void)flag;
+		// ft_printf("j -> [%X]\n", j);
+		j += 2 * ((is_32_ar) ? sizeof(uint32_t) : sizeof(uint64_t));
+	}
+	// ft_printf("End of while, j -> [%X]\n", j);
+	return (0);
+}
+
+int8_t		analyse_magic_number(void *ptr_header, char *path, int8_t flag[3], size_t st_size)
 {
 	uint32_t		magic_number;
 
@@ -175,7 +284,7 @@ int8_t		analyse_magic_number(void *ptr_header, char *path, int8_t flag[3])
 	else if (magic_number == FAT_CIGAM)
 		return (handle_fat_header_32(ptr_header, 1, path, flag));
 	else if (magic_number == AR_MAGIC)
-		return (handle_ar(ptr_header, path, flag));
+		return (handle_ar(ptr_header, path, flag, st_size));
 	if (magic_number == FAT_MAGIC_64)
 		return (handle_fat_header_64(ptr_header, 0, path, flag));
 	else if (magic_number == FAT_CIGAM_64)
@@ -199,7 +308,7 @@ int8_t		get_file_content(char *path, int ac, int8_t flag[3])
 		return (exit_nm(path, ": Can't map file\n"));
 	if (ac > 2)
 		ft_printf("\n%s:\n", path);
-	if (analyse_magic_number((void*)content, path, flag) == -1)
+	if (analyse_magic_number((void*)content, path, flag, file_stat.st_size) == -1)
 		return (EXIT_FAILURE);
 	if (munmap(content, file_stat.st_size) < 0)
 		return (exit_nm(path, ": Can't free memory allocated to map file\n"));
