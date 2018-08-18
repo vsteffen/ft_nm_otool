@@ -89,5 +89,8 @@ void					sort_nm_32(struct s_nm_32 *nm_32, int8_t endian, int8_t flag[3]);
 void					sort_nm_64(struct s_nm_64 *nm_64, int8_t endian, int8_t flag[3]);
 
 int8_t					match_and_use_magic_number(void *ptr_header, uint32_t magic_number, struct s_file_st *file_st, int8_t flag[3]);
+int8_t					find_segments_and_sections_32(void *ptr_header, int8_t endian, int8_t flag[2]);
+int8_t					find_segments_and_sections_64(void *ptr_header, int8_t endian, int8_t flag[2]);
+
 
 #endif

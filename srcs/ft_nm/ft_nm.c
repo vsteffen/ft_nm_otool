@@ -243,7 +243,6 @@ int8_t		handle_ar(void *ptr_header, struct s_file_st *file_st, int8_t flag[3])
 		if (offset_file_tmp == (uint64_t) - 1 || i != offset_file_tmp)
 		{
 			offset_file_tmp = i;
-			ft_printf("\n\ni vaut [%zu]", i);
 			ft_printf("\n%s(%s):\n", file_st->path, ptr_header + i);
 			find_begin_ar_file(ptr_header, &i, file_st);
 			match_and_use_magic_number(ptr_header + i, *(uint32_t *)(ptr_header + i), file_st, flag);
@@ -328,7 +327,7 @@ int8_t		get_file_content(char *path, int ac, int8_t flag[3])
 	return (EXIT_SUCCESS);
 }
 
-int8_t		is_flag(char *arg)
+int8_t		is_flag_nm(char *arg)
 {
 	if (arg[0] != '-')
 		return (-1);
@@ -350,7 +349,7 @@ void		get_flag(int8_t flag[3], int ac, char **av)
 	i = 1;
 	while (i++ < ac)
 	{
-		if ((res = is_flag(av[i - 1])) != -1)
+		if ((res = is_flag_nm(av[i - 1])) != -1)
 			flag[res] = 1;
 	}
 }
@@ -369,7 +368,7 @@ int			main(int ac, char **av)
 	i = 1;
 	while (i++ < ac)
 	{
-		if ((status = is_flag(av[i - 1])) < 0)
+		if ((status = is_flag_nm(av[i - 1])) < 0)
 		{
 			if (status == -2)
 				return (exit_nm("Unknown command line argument '", ft_strjoin(av[i - 1], "'\n")));
