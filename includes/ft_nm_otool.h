@@ -52,6 +52,11 @@ typedef struct			s_nm_64 {
 	uint32_t			reserved32;
 }						t_nm_64;
 
+typedef struct			s_file_st {
+	char				*path;
+	size_t				size;
+}						t_file_st;
+
 void					print_sections_32(struct s_sect_32 *sect_list);
 void					print_sections_32_deprecated(struct segment_command *seg);
 void					print_segments_32_deprecated(char *content);
@@ -82,5 +87,7 @@ struct s_nm_64			*get_nm_64(void *ptr_header, int8_t endian);
 
 void					sort_nm_32(struct s_nm_32 *nm_32, int8_t endian, int8_t flag[3]);
 void					sort_nm_64(struct s_nm_64 *nm_64, int8_t endian, int8_t flag[3]);
+
+int8_t					match_and_use_magic_number(void *ptr_header, uint32_t magic_number, struct s_file_st *file_st, int8_t flag[3]);
 
 #endif
