@@ -1,8 +1,8 @@
 #include "ft_nm_otool.h"
 
-int8_t		exit_nm(char *path, char *message)
+int8_t		exit_err(char *path, char *message)
 {
-	ft_putstr("ft_nm: ");
+	ft_putstr("ft_otool: ");
 	ft_putstr(path);
 	ft_putstr(message);
 	return (EXIT_FAILURE);
@@ -76,14 +76,12 @@ int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, struct s_file_st *
 	fat_arch_32 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header));
 	nb_arch = (endian) ? endian_swap_int32(fat_header->nfat_arch) : fat_header->nfat_arch;
 	i = 0;
-	// ft_printf("ft_nm: fat_header 32 bits [%X] with [%zu] architectures\n", (endian == 0) ? FAT_MAGIC : FAT_CIGAM, nb_arch);
 	while (i < nb_arch)
 	{
 		fat_arch_32 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header) + sizeof(struct fat_arch) * i);
-		ft_printf("\n%s (for architecture %s):\n", file_st->path, get_architecture_name((endian) ? endian_swap_int32(fat_arch_32->cputype) : fat_arch_32->cputype));
+		ft_printf("%s (for architecture %s):\n", file_st->path, get_architecture_name((endian) ? endian_swap_int32(fat_arch_32->cputype) : fat_arch_32->cputype));
 		offset_arch = (endian) ? endian_swap_int32(fat_arch_32->offset) : fat_arch_32->offset;
 		magic_number = *(uint32_t *)(ptr_header + offset_arch);
-		// ft_printf(" └─> Magic_number [%X] for architecture n˚[%X]\n", magic_number, i);
 		match_and_use_magic_number(ptr_header + offset_arch, magic_number, file_st, flag);
 		i++;
 	}
@@ -103,14 +101,12 @@ int8_t		handle_fat_header_64(void *ptr_header, int8_t endian, struct s_file_st *
 	fat_arch_64 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header));
 	nb_arch = (endian) ? endian_swap_int32(fat_header->nfat_arch) : fat_header->nfat_arch;
 	i = 0;
-	// ft_printf("ft_nm: fat_header 32 bits [%X] with [%zu] architectures\n", (endian == 0) ? FAT_MAGIC : FAT_CIGAM, nb_arch);
 	while (i < nb_arch)
 	{
 		fat_arch_64 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header) + sizeof(struct fat_arch) * i);
-		ft_printf("\n%s (for architecture %s):\n", file_st->path, get_architecture_name((endian) ? endian_swap_int32(fat_arch_64->cputype) : fat_arch_64->cputype));
+		ft_printf("%s (for architecture %s):\n", file_st->path, get_architecture_name((endian) ? endian_swap_int32(fat_arch_64->cputype) : fat_arch_64->cputype));
 		offset_arch = (endian) ? endian_swap_int64(fat_arch_64->offset) : fat_arch_64->offset;
 		magic_number = *(uint32_t *)(ptr_header + offset_arch);
-		// ft_printf(" └─> Magic_number [%X] for architecture n˚[%X]\n", magic_number, i);
 		match_and_use_magic_number(ptr_header + offset_arch, magic_number, file_st, flag);
 		i++;
 	}
@@ -138,7 +134,6 @@ void		*find_begin_ar_file(void *ptr_header, size_t *i, struct s_file_st *file_st
 {
 	char		*file;
 
-	// ft_printf("i = [%zu]\n", *i);
 	file = (char *)ptr_header;
 	while (file[*i] != '\0')
 		(*i)++;
@@ -191,7 +186,6 @@ int8_t		handle_ar(void *ptr_header, struct s_file_st *file_st, int8_t flag[2])
 	size_t				i;
 	size_t				j;
 	size_t				symtab_pos;
-	// uint64_t			offset_file;
 	uint64_t			offset_file_tmp;
 
 	i = 0;
@@ -208,34 +202,24 @@ int8_t		handle_ar(void *ptr_header, struct s_file_st *file_st, int8_t flag[2])
 		return (1);
 	if (ran_off == 0)
 		return (1);
-	// ft_printf("ran_off -> [%zu] and i [0x%zu]\n", ran_off, i);
 	symtab_pos = i;
 	j = i + ((is_32_ar) ? sizeof(uint32_t) : sizeof(uint64_t));
-	offset_file_tmp = (uint64_t) - 1;
+	offset_file_tmp = (uint64_t)-1;
 	while (j < ran_off + symtab_pos)
 	{
-		// ft_printf("j [%zu] -> offset -> [%X]\n", j, *(size_t*)(ptr_header + j));
 		i = (is_32_ar) ? *(uint32_t*)(ptr_header + j) : *(uint64_t*)(ptr_header + symtab_pos + j);
-		// ft_printf("New assign to i [0x%X]\n", i);
-		// ft_printf("New assign to i [0x%zu] | string -> [%s]\n", i, ptr_header + i);
 		if (i >= file_st->size)
 			return (1);
 		find_next_ar_header(ptr_header, &i, file_st);
-		// ft_printf("Second new assign to i [0x%X]\n", i);
-		if (offset_file_tmp == (uint64_t) - 1 || i != offset_file_tmp)
+		if (offset_file_tmp == (uint64_t)-1 || i != offset_file_tmp)
 		{
 			offset_file_tmp = i;
 			ft_printf("\n%s(%s):\n", file_st->path, ptr_header + i);
 			find_begin_ar_file(ptr_header, &i, file_st);
 			match_and_use_magic_number(ptr_header + i, *(uint32_t *)(ptr_header + i), file_st, flag);
 		}
-		// ft_printf("Third new assign to i [0x%X]\n", i);
-		// exit(0);
-		// (void)flag;
-		// ft_printf("j -> [%X]\n", j);
 		j += 2 * ((is_32_ar) ? sizeof(uint32_t) : sizeof(uint64_t));
 	}
-	// ft_printf("End of while, j -> [%X]\n", j);
 	return (0);
 }
 
@@ -251,7 +235,7 @@ int8_t		match_and_use_magic_number(void *ptr_header, uint32_t magic_number, stru
 		return (handle_32(ptr_header, 1, flag));
 	else if (magic_number == AR_MAGIC)
 		return (handle_ar(ptr_header, file_st, flag));
-	ft_printf("ft_nm: %s: The file was not recognized as a valid object file\n", file_st->path);
+	ft_printf("ft_otool: %s: The file was not recognized as a valid object file\n", file_st->path);
 	return (-2);
 }
 
@@ -261,7 +245,7 @@ int8_t		analyse_magic_number(void *ptr_header, char *path, int8_t flag[2], struc
 
 	if (!ptr_header)
 	{
-		ft_printf("ft_nm: %s: The file was not recognized as a valid object file\n", path);
+		ft_printf("ft_otool: %s: The file was not recognized as a valid object file\n", path);
 		return (-1);
 	}
 	magic_number = *(uint32_t *)ptr_header;
@@ -290,49 +274,68 @@ int8_t		get_file_content(char *path, int8_t flag[2], int nb_files)
 	struct s_file_st	file_st;
 
 	if ((fd = open(path, O_RDONLY)) < 0)
-		return (exit_nm(path, ": No such file or permission denied\n"));
+		return (exit_err(path, ": No such file or permission denied\n"));
 	if (fstat(fd, &file_stat) < 0)
-		return (exit_nm(path, ": fstat failed.\n"));
+		return (exit_err(path, ": fstat failed.\n"));
 	if (S_ISDIR(file_stat.st_mode))
-		return (exit_nm(path, ": Is a directory\n"));
+		return (exit_err(path, ": Is a directory\n"));
 	if ((content = mmap(0, file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED)
-		return (exit_nm(path, ": Can't map file\n"));
+		return (exit_err(path, ": Can't map file\n"));
 	if (nb_files > 1)
-		ft_printf("\n%s:\n", path);
+		ft_printf("%s:\n", path);
 	init_file_st(&file_st, path, file_stat.st_size);
 	if (analyse_magic_number((void*)content, path, flag, &file_st) == -1)
 		return (EXIT_FAILURE);
 	if (munmap(content, file_stat.st_size) < 0)
-		return (exit_nm(path, ": Can't free memory allocated to map file\n"));
+		return (exit_err(path, ": Can't free memory allocated to map file\n"));
 	if (close(fd) < 0)
-		return (exit_nm(path, ": Error when closing file\n"));
+		return (exit_err(path, ": Error when closing file\n"));
 	return (EXIT_SUCCESS);
 }
 
 int8_t		is_flag_otool(char *arg)
 {
+	size_t		i;
+
 	if (arg[0] != '-')
 		return (-1);
-	if (arg[1] == 'd' && arg[2] == '\0')
-		return (0);
-	if (arg[1] == 't' && arg[2] == '\0')
-		return (1);
-	return (-2);
+	i = 0;
+	while (arg[++i] != '\0')
+	{
+		if (arg[i] == 'd')
+			continue ;
+		if (arg[i] == 't')
+			continue ;
+		return (-2);
+	}
+	return (1);
 }
 
 int8_t		get_flag_otool(int8_t flag[2], int ac, char **av)
 {
 	int			i;
-	int8_t		res;
+	size_t		j;
 
-	ft_bzero(flag, sizeof(int8_t) * 2);
 	i = 1;
 	while (i++ < ac)
 	{
-		if ((res = is_flag_otool(av[i - 1])) != -1)
-			flag[res] = 1;
-		if (res == -2)
+		j = 0;
+		while (av[i - 1][++j] != '\0')
+		{
+			if (av[i - 1][0] != '-')
+				break ;
+			if (av[i - 1][j] == 'd')
+			{
+				flag[0] = 1;
+				continue ;
+			}
+			if (av[i - 1][j] == 't')
+			{
+				flag[1] = 1;
+				continue ;
+			}
 			return (0);
+		}
 	}
 	return (1);
 }
@@ -342,8 +345,10 @@ int8_t			verif_files_and_print_filename_if_one_file(int ac, char **av)
 	int			i;
 	int			files;
 	int			file_ac;
+	int			flags;
 
 	files = 0;
+	flags = 0;
 	i = 1;
 	while (i++ < ac)
 	{
@@ -351,9 +356,10 @@ int8_t			verif_files_and_print_filename_if_one_file(int ac, char **av)
 		{
 			file_ac = i - 1;
 			files++;
+			flags++;
 		}
 	}
-	if (files == 0)
+	if (files == 0 || flags == 0)
 		return (0);
 	if (files == 1)
 		ft_printf("%s:\n", av[file_ac]);
@@ -376,6 +382,7 @@ int			main(int ac, char **av)
 	int8_t		flag[2];
 	int			nb_files;
 
+	ft_bzero(flag, sizeof(int8_t) * 2);
 	if (get_flag_otool(flag, ac, av) == 0 || \
 		(nb_files = verif_files_and_print_filename_if_one_file(ac, av)) == 0)
 		return (exit_usage());

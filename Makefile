@@ -36,11 +36,9 @@ NM 		= 	ft_nm
 NM_SRC	=	$(NM)/ft_nm.c \
 			$(NM)/nlist_functions.c \
 			$(NM)/get_nm_32.c \
-			$(NM)/print_nm_32.c \
 			$(NM)/symbole_table_32.c \
 			$(NM)/sort_32.c \
 			$(NM)/get_nm_64.c \
-			$(NM)/print_nm_64.c \
 			$(NM)/symbole_table_64.c \
 			$(NM)/sort_64.c
 
@@ -48,16 +46,8 @@ NM_OBJ	=	$(patsubst %.c, $(OPATH)/%.o, $(NM_SRC))
 
 OTOOL 		= 	ft_otool
 OTOOL_SRC	=	$(OTOOL)/ft_otool.c \
-				$(OTOOL)/nlist_functions.c \
-				$(OTOOL)/get_nm_32.c \
-				$(OTOOL)/print_nm_32.c \
-				$(OTOOL)/symbole_table_32.c \
-				$(OTOOL)/sort_32.c \
-				$(OTOOL)/get_nm_64.c \
-				$(OTOOL)/print_nm_64.c \
-				$(OTOOL)/symbole_table_64.c \
-				$(OTOOL)/sort_64.c \
-				$(OTOOL)/sections.c
+				$(OTOOL)/sections_32.c \
+				$(OTOOL)/sections_64.c
 
 OTOOL_OBJ	=	$(patsubst %.c, $(OPATH)/%.o, $(OTOOL_SRC))
 
