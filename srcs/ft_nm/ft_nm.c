@@ -1,6 +1,6 @@
 #include "ft_nm_otool.h"
 
-int8_t		exit_nm(char *path, char *message)
+int8_t		exit_err(char *path, char *message)
 {
 	ft_putstr("ft_nm: ");
 	ft_putstr(path);
@@ -8,7 +8,7 @@ int8_t		exit_nm(char *path, char *message)
 	return (EXIT_FAILURE);
 }
 
-int8_t		handle_64(void *ptr_header, int8_t endian, int8_t flag[3])
+int8_t		handle_64(void *ptr_header, int8_t endian, int8_t flag[2])
 {
 	struct s_nm_64				*nm_64;
 
@@ -22,7 +22,7 @@ int8_t		handle_64(void *ptr_header, int8_t endian, int8_t flag[3])
 	return (-1);
 }
 
-int8_t		handle_32(void *ptr_header, int8_t endian, int8_t flag[3])
+int8_t		handle_32(void *ptr_header, int8_t endian, int8_t flag[2])
 {
 	struct s_nm_32				*nm_32;
 
@@ -81,7 +81,7 @@ char		*get_architecture_name(cpu_type_t cputype)
 	return ("Unknown");
 }
 
-int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, struct s_file_st *file_st, int8_t flag[3])
+int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, struct s_file_st *file_st, int8_t flag[2])
 {
 	struct fat_header	*fat_header;
 	struct fat_arch		*fat_arch_32;
@@ -108,7 +108,7 @@ int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, struct s_file_st *
 	return (1);
 }
 
-int8_t		handle_fat_header_64(void *ptr_header, int8_t endian, struct s_file_st *file_st, int8_t flag[3])
+int8_t		handle_fat_header_64(void *ptr_header, int8_t endian, struct s_file_st *file_st, int8_t flag[2])
 {
 	struct fat_header	*fat_header;
 	struct fat_arch		*fat_arch_64;
@@ -202,7 +202,7 @@ uint32_t		get_ran_off_32(void *ptr_header, size_t *i, struct s_file_st *file_st)
 	return (0);
 }
 
-int8_t		handle_ar(void *ptr_header, struct s_file_st *file_st, int8_t flag[3])
+int8_t		handle_ar(void *ptr_header, struct s_file_st *file_st, int8_t flag[2])
 {
 	uint64_t			ran_off;
 	int8_t				is_32_ar;
@@ -257,7 +257,7 @@ int8_t		handle_ar(void *ptr_header, struct s_file_st *file_st, int8_t flag[3])
 	return (0);
 }
 
-int8_t		match_and_use_magic_number(void *ptr_header, uint32_t magic_number, struct s_file_st *file_st, int8_t flag[3])
+int8_t		match_and_use_magic_number(void *ptr_header, uint32_t magic_number, struct s_file_st *file_st, int8_t flag[2])
 {
 	if (magic_number == MH_MAGIC_64)
 		return (handle_64(ptr_header, 0, flag));
@@ -273,7 +273,7 @@ int8_t		match_and_use_magic_number(void *ptr_header, uint32_t magic_number, stru
 	return (-2);
 }
 
-int8_t		analyse_magic_number(void *ptr_header, char *path, int8_t flag[3], struct s_file_st *file_st)
+int8_t		analyse_magic_number(void *ptr_header, char *path, int8_t flag[2], struct s_file_st *file_st)
 {
 	uint32_t		magic_number;
 
@@ -300,7 +300,7 @@ void		init_file_st(struct s_file_st *file_st, char *path, size_t st_size)
 	file_st->size = st_size;
 }
 
-int8_t		get_file_content(char *path, int ac, int8_t flag[3])
+int8_t		get_file_content(char *path, int nb_files, int8_t flag[2])
 {
 	int					fd;
 	char				*content;
@@ -308,50 +308,94 @@ int8_t		get_file_content(char *path, int ac, int8_t flag[3])
 	struct s_file_st	file_st;
 
 	if ((fd = open(path, O_RDONLY)) < 0)
-		return (exit_nm(path, ": No such file or permission denied\n"));
+		return (exit_err(path, ": No such file or permission denied\n"));
 	if (fstat(fd, &file_stat) < 0)
-		return (exit_nm(path, ": fstat failed.\n"));
+		return (exit_err(path, ": fstat failed.\n"));
 	if (S_ISDIR(file_stat.st_mode))
-		return (exit_nm(path, ": Is a directory\n"));
+		return (exit_err(path, ": Is a directory\n"));
 	if ((content = mmap(0, file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED)
-		return (exit_nm(path, ": Can't map file\n"));
-	if (ac > 2)
+		return (exit_err(path, ": Can't map file\n"));
+	if (nb_files > 1)
 		ft_printf("\n%s:\n", path);
 	init_file_st(&file_st, path, file_stat.st_size);
 	if (analyse_magic_number((void*)content, path, flag, &file_st) == -1)
 		return (EXIT_FAILURE);
 	if (munmap(content, file_stat.st_size) < 0)
-		return (exit_nm(path, ": Can't free memory allocated to map file\n"));
+		return (exit_err(path, ": Can't free memory allocated to map file\n"));
 	if (close(fd) < 0)
-		return (exit_nm(path, ": Error when closing file\n"));
+		return (exit_err(path, ": Error when closing file\n"));
 	return (EXIT_SUCCESS);
 }
 
 int8_t		is_flag_nm(char *arg)
 {
+	size_t		i;
+
 	if (arg[0] != '-')
 		return (-1);
-	if (arg[1] == 'p' && arg[2] == '\0')
-		return (0);
-	if (arg[1] == 'r' && arg[2] == '\0')
-		return (1);
-	if (arg[1] == 'm' && arg[2] == '\0')
-		return (2);
-	return (-2);
+	i = 0;
+	while (arg[++i] != '\0')
+	{
+		if (arg[i] == 'p')
+			continue ;
+		if (arg[i] == 'r')
+			continue ;
+		return (-2);
+	}
+	return (1);
 }
 
-void		get_flag(int8_t flag[3], int ac, char **av)
+int8_t		get_flag_nm(int8_t flag[2], int ac, char **av)
 {
 	int			i;
-	int8_t		res;
+	size_t		j;
 
-	ft_bzero(flag, sizeof(int8_t) * 3);
 	i = 1;
 	while (i++ < ac)
 	{
-		if ((res = is_flag_nm(av[i - 1])) != -1)
-			flag[res] = 1;
+		j = 0;
+		while (av[i - 1][++j] != '\0')
+		{
+			if (av[i - 1][0] != '-')
+				break ;
+			if (av[i - 1][j] == 'p')
+			{
+				flag[0] = 1;
+				continue ;
+			}
+			if (av[i - 1][j] == 'r')
+			{
+				flag[1] = 1;
+				continue ;
+			}
+			return (0);
+		}
 	}
+	return (1);
+}
+
+int8_t			verif_args_files_and_get_nb_files(int ac, char **av)
+{
+	int			i;
+	int			files;
+	int			file_ac;
+	int8_t		res;
+
+	files = 0;
+	i = 1;
+	while (i++ < ac)
+	{
+		if ((res = is_flag_nm(av[i - 1])) == -2)
+		{
+			return (-1);
+		}
+		else if (res == -1)
+		{
+			file_ac = i - 1;
+			files++;
+		}
+	}
+	return (files);
 }
 
 int			main(int ac, char **av)
@@ -359,25 +403,24 @@ int			main(int ac, char **av)
 	int			i;
 	int8_t		status;
 	int8_t		return_status;
-	int8_t		flag[3];
-	int8_t		arg_path_found;
+	int8_t		flag[2];
+	int			nb_files;
 
-	arg_path_found = 0;
-	get_flag(flag, ac, av);
+	ft_bzero(flag, sizeof(int8_t) * 2);
+	if ((nb_files = verif_args_files_and_get_nb_files(ac, av)) < 0 || \
+		get_flag_nm(flag, ac, av) == 0)
+		return (exit_err("", "Unknown command line argument\n"));
+	if (nb_files == 0)
+		return (get_file_content("a.out", 1, flag));
 	return_status = EXIT_SUCCESS;
 	i = 1;
 	while (i++ < ac)
 	{
 		if ((status = is_flag_nm(av[i - 1])) < 0)
 		{
-			if (status == -2)
-				return (exit_nm("Unknown command line argument '", ft_strjoin(av[i - 1], "'\n")));
-			arg_path_found = 1;
-			if ((status = get_file_content(av[i - 1], ac, flag)) == EXIT_FAILURE)
+			if ((status = get_file_content(av[i - 1], nb_files, flag)) == EXIT_FAILURE)
 				return_status = EXIT_FAILURE;
 		}
 	}
-	if (arg_path_found == 0)
-		return (get_file_content("a.out", 1, flag));
 	return (return_status);
 }
