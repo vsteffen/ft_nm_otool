@@ -13,16 +13,20 @@ int8_t			is_ppc_arch_64(void *ptr_header, int8_t endian)
 }
 
 
-void			hexdump_ppc_64(void *ptr_header, struct section_64 *sect, int8_t endian)
+int8_t			hexdump_ppc_64(void *ptr_header, struct section_64 *sect, int8_t endian, struct s_nm_data *nm_data)
 {
 	uint64_t					addr;
 	uint64_t					i;
 	uint64_t					size;
+	uint32_t					offset;
 	void						*content;
 
 	addr = (endian) ? endian_swap_int64(sect->addr) : sect->addr;
 	size = (endian) ? endian_swap_int64(sect->size) : sect->size;
-	content  = ptr_header + ((endian) ? endian_swap_int32(sect->offset) : sect->offset);
+	offset = (endian) ? endian_swap_int32(sect->offset) : sect->offset;
+	if (offset + size > nm_data->file_size)
+		return (exit_err(nm_data->file_path, " corrupted binary"));
+	content  = ptr_header + offset;
 	i = 0;
 	while (i < size)
 	{
@@ -41,23 +45,25 @@ void			hexdump_ppc_64(void *ptr_header, struct section_64 *sect, int8_t endian)
 		i++;
 	}
 	ft_putchar('\n');
+	return (0);
 }
 
-void			hexdump_with_ascii_64(void *ptr_header, struct section_64 *sect, int8_t endian)
+int8_t			hexdump_with_ascii_64(void *ptr_header, struct section_64 *sect, int8_t endian, struct s_nm_data *nm_data)
 {
 	uint64_t					addr;
 	uint64_t					i;
 	uint64_t					size;
+	uint32_t					offset;
 	void						*content;
 
 	if (is_ppc_arch_64(ptr_header, endian))
-	{
-		hexdump_ppc_64(ptr_header, sect, endian);
-		return ;
-	}
+		return (hexdump_ppc_64(ptr_header, sect, endian, nm_data));
 	addr = (endian) ? endian_swap_int64(sect->addr) : sect->addr;
 	size = (endian) ? endian_swap_int64(sect->size) : sect->size;
-	content  = ptr_header + ((endian) ? endian_swap_int32(sect->offset) : sect->offset);
+	offset = (endian) ? endian_swap_int32(sect->offset) : sect->offset;
+	if (offset + size > nm_data->file_size)
+		return (exit_err(nm_data->file_path, " corrupted binary"));
+	content = ptr_header + offset;
 	i = 0;
 	while (i < size)
 	{
@@ -74,38 +80,43 @@ void			hexdump_with_ascii_64(void *ptr_header, struct section_64 *sect, int8_t e
 		i++;
 	}
 	ft_putchar('\n');
+	return (0);
 }
 
 int8_t			identify_segment_64(void *ptr_header, struct segment_command_64 *seg, int8_t endian, \
-	int8_t flag[2])
+	struct s_nm_data *nm_data)
 {
 	struct section_64	*sect;
 	size_t				i;
 	uint32_t			seg_nsects;
 
-	i = 0;
+	if ((size_t)((void*)seg - (void*)ptr_header) + sizeof(*seg) + sizeof(*sect) >= nm_data->file_size)
+		return (exit_err(nm_data->file_path, " corrupted binary"));
 	sect = (void *)seg + sizeof(*seg);
 	seg_nsects = (endian) ? endian_swap_int32(seg->nsects) : seg->nsects;
+	if (sizeof(*sect) * seg_nsects + (size_t)((void*)seg - (void*)ptr_header) >= nm_data->file_size)
+		return (exit_err(nm_data->file_path, " corrupted binary"));
+	i = 0;
 	while(i < seg_nsects)
 	{
-		if (flag[0] == 1 && ft_strcmp(sect[i].sectname, SECT_DATA) == 0 \
+		if (nm_data->flag[0] == 1 && ft_strcmp(sect[i].sectname, SECT_DATA) == 0 \
 			&& ft_strcmp(sect[i].segname, SEG_DATA) == 0)
 		{
 			ft_printf("Contents of (__DATA,__data) section\n");
-			hexdump_with_ascii_64(ptr_header, &(sect[i]), endian);
+			hexdump_with_ascii_64(ptr_header, &(sect[i]), endian, nm_data);
 		}
-		if (flag[1] == 1 && ft_strcmp(sect[i].sectname, SECT_TEXT) == 0 \
+		if (nm_data->flag[1] == 1 && ft_strcmp(sect[i].sectname, SECT_TEXT) == 0 \
 			&& ft_strcmp(sect[i].segname, SEG_TEXT) == 0)
 		{
 			ft_printf("Contents of (__TEXT,__text) section\n");
-			hexdump_with_ascii_64(ptr_header, &(sect[i]), endian);
+			hexdump_with_ascii_64(ptr_header, &(sect[i]), endian, nm_data);
 		}
 		i++;
 	}
 	return (0);
 }
 
-int8_t			find_segments_and_sections_64(void *ptr_header, int8_t endian, int8_t flag[2])
+int8_t			find_segments_and_sections_64(void *ptr_header, int8_t endian, struct s_nm_data *nm_data)
 {
 	size_t						i;
 	struct mach_header_64		*header;
@@ -113,9 +124,13 @@ int8_t			find_segments_and_sections_64(void *ptr_header, int8_t endian, int8_t f
 	uint32_t					header_ncmds;
 	uint32_t					lc_cmd;
 
+	if (sizeof(struct mach_header_64) + sizeof(struct load_command) >= nm_data->file_size)
+		return (exit_err(nm_data->file_path, " corrupted binary"));
 	header = (struct mach_header_64 *)ptr_header;
 	header_ncmds = (endian) ? endian_swap_int32(header->ncmds) : header->ncmds;
 	lc = (struct load_command *)(ptr_header + sizeof(*header));
+	if (sizeof(struct load_command) * header_ncmds + (sizeof(struct segment_command_64) - sizeof(struct load_command)) >= nm_data->file_size)
+		return (exit_err(nm_data->file_path, " corrupted binary"));
 	i = 0;
 	while (i++ < header_ncmds)
 	{
@@ -123,7 +138,7 @@ int8_t			find_segments_and_sections_64(void *ptr_header, int8_t endian, int8_t f
 		if (lc_cmd == LC_SEGMENT_64)
 		{
 			identify_segment_64(ptr_header, (struct segment_command_64 *)lc, \
-				endian, flag);
+				endian, nm_data);
 		}
 		lc = (endian) ? (void *)lc + endian_swap_int32(lc->cmdsize) : (void *)lc + lc->cmdsize;
 	}

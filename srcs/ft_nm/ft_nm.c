@@ -150,14 +150,12 @@ int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, struct s_nm_data *
 	fat_arch_32 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header));
 	nb_arch = (endian) ? endian_swap_int32(fat_header->nfat_arch) : fat_header->nfat_arch;
 	i = 0;
-	// ft_printf("ft_nm: fat_header 32 bits [%X] with [%zu] architectures\n", (endian == 0) ? FAT_MAGIC : FAT_CIGAM, nb_arch);
 	while (i < nb_arch)
 	{
 		fat_arch_32 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header) + sizeof(struct fat_arch) * i);
 		ft_printf("\n%s (for architecture %s):\n", nm_data->file_path, get_architecture_name((endian) ? endian_swap_int32(fat_arch_32->cputype) : fat_arch_32->cputype));
 		offset_arch = (endian) ? endian_swap_int32(fat_arch_32->offset) : fat_arch_32->offset;
 		magic_number = *(uint32_t *)(ptr_header + offset_arch);
-		// ft_printf(" └─> Magic_number [%X] for architecture n˚[%X]\n", magic_number, i);
 		match_and_use_magic_number(ptr_header + offset_arch, magic_number, nm_data);
 		i++;
 	}
@@ -177,14 +175,12 @@ int8_t		handle_fat_header_64(void *ptr_header, int8_t endian, struct s_nm_data *
 	fat_arch_64 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header));
 	nb_arch = (endian) ? endian_swap_int32(fat_header->nfat_arch) : fat_header->nfat_arch;
 	i = 0;
-	// ft_printf("ft_nm: fat_header 32 bits [%X] with [%zu] architectures\n", (endian == 0) ? FAT_MAGIC : FAT_CIGAM, nb_arch);
 	while (i < nb_arch)
 	{
 		fat_arch_64 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header) + sizeof(struct fat_arch) * i);
 		ft_printf("\n%s (for architecture %s):\n", nm_data->file_path, get_architecture_name((endian) ? endian_swap_int32(fat_arch_64->cputype) : fat_arch_64->cputype));
 		offset_arch = (endian) ? endian_swap_int64(fat_arch_64->offset) : fat_arch_64->offset;
 		magic_number = *(uint32_t *)(ptr_header + offset_arch);
-		// ft_printf(" └─> Magic_number [%X] for architecture n˚[%X]\n", magic_number, i);
 		match_and_use_magic_number(ptr_header + offset_arch, magic_number, nm_data);
 		i++;
 	}
@@ -212,7 +208,6 @@ void		*find_begin_ar_file(void *ptr_header, size_t *i, struct s_nm_data *nm_data
 {
 	char		*file;
 
-	// ft_printf("i = [%zu]\n", *i);
 	file = (char *)ptr_header;
 	while (file[*i] != '\0')
 		(*i)++;
@@ -265,7 +260,6 @@ int8_t		handle_ar(void *ptr_header, struct s_nm_data *nm_data)
 	size_t				i;
 	size_t				j;
 	size_t				symtab_pos;
-	// uint64_t			offset_file;
 	uint64_t			offset_file_tmp;
 
 	i = 0;
@@ -282,20 +276,15 @@ int8_t		handle_ar(void *ptr_header, struct s_nm_data *nm_data)
 		return (1);
 	if (ran_off == 0)
 		return (1);
-	// ft_printf("ran_off -> [%zu] and i [0x%zu]\n", ran_off, i);
 	symtab_pos = i;
 	j = i + ((is_32_ar) ? sizeof(uint32_t) : sizeof(uint64_t));
 	offset_file_tmp = (uint64_t) - 1;
 	while (j < ran_off + symtab_pos)
 	{
-		// ft_printf("j [%zu] -> offset -> [%X]\n", j, *(size_t*)(ptr_header + j));
 		i = (is_32_ar) ? *(uint32_t*)(ptr_header + j) : *(uint64_t*)(ptr_header + symtab_pos + j);
-		// ft_printf("New assign to i [0x%X]\n", i);
-		// ft_printf("New assign to i [0x%zu] | string -> [%s]\n", i, ptr_header + i);
 		if (i >= nm_data->file_size)
 			return (1);
 		find_next_ar_header(ptr_header, &i, nm_data);
-		// ft_printf("Second new assign to i [0x%X]\n", i);
 		if (offset_file_tmp == (uint64_t) - 1 || i != offset_file_tmp)
 		{
 			offset_file_tmp = i;
@@ -303,13 +292,8 @@ int8_t		handle_ar(void *ptr_header, struct s_nm_data *nm_data)
 			find_begin_ar_file(ptr_header, &i, nm_data);
 			match_and_use_magic_number(ptr_header + i, *(uint32_t *)(ptr_header + i), nm_data);
 		}
-		// ft_printf("Third new assign to i [0x%X]\n", i);
-		// exit(0);
-		// (void)flag;
-		// ft_printf("j -> [%X]\n", j);
 		j += 2 * ((is_32_ar) ? sizeof(uint32_t) : sizeof(uint64_t));
 	}
-	// ft_printf("End of while, j -> [%X]\n", j);
 	return (0);
 }
 
