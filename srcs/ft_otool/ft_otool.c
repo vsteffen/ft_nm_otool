@@ -73,8 +73,7 @@ int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, struct s_nm_data *
 	uint32_t			magic_number;
 	size_t				i;
 
-	if (sizeof(struct fat_header) + sizeof(struct fat_arch) >= \
-		nm_data->file_size)
+	if (sizeof(*fat_header) + sizeof(*fat_arch_32) >= nm_data->file_size)
 	return (exit_err(nm_data->file_path, " corrupted binary"));
 	fat_header = (struct fat_header*)ptr_header;
 	fat_arch_32 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header));
@@ -82,7 +81,7 @@ int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, struct s_nm_data *
 	i = 0;
 	while (i < nb_arch)
 	{
-		if (sizeof(struct fat_header) + sizeof(struct fat_arch) * i + sizeof(struct fat_arch) >= nm_data->file_size)
+		if (sizeof(*fat_header) + sizeof(*fat_arch_32) * i + sizeof(*fat_arch_32) >= nm_data->file_size)
 			return (exit_err(nm_data->file_path, " corrupted binary"));
 		fat_arch_32 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header) + sizeof(struct fat_arch) * i);
 		ft_printf("\n%s (for architecture %s):\n", nm_data->file_path, get_architecture_name((endian) ? endian_swap_int32(fat_arch_32->cputype) : fat_arch_32->cputype));
@@ -105,8 +104,7 @@ int8_t		handle_fat_header_64(void *ptr_header, int8_t endian, struct s_nm_data *
 	uint32_t			magic_number;
 	size_t				i;
 
-	if (sizeof(struct fat_header) + sizeof(struct fat_arch_64) >= \
-		nm_data->file_size)
+	if (sizeof(*fat_header) + sizeof(*fat_arch_64) >= nm_data->file_size)
 		return (exit_err(nm_data->file_path, " corrupted binary"));
 	fat_header = (struct fat_header*)ptr_header;
 	fat_arch_64 = (struct fat_arch_64*)(ptr_header + sizeof(struct fat_header));
@@ -114,7 +112,7 @@ int8_t		handle_fat_header_64(void *ptr_header, int8_t endian, struct s_nm_data *
 	i = 0;
 	while (i < nb_arch)
 	{
-		if (sizeof(struct fat_header) + sizeof(struct fat_arch) * i + sizeof(struct fat_arch_64) >= nm_data->file_size)
+		if (sizeof(*fat_header) + sizeof(*fat_arch_64) * i + sizeof(*fat_arch_64) >= nm_data->file_size)
 			return (exit_err(nm_data->file_path, " corrupted binary"));
 		fat_arch_64 = (struct fat_arch_64*)(ptr_header + sizeof(struct fat_header) + sizeof(struct fat_arch) * i);
 		ft_printf("\n%s (for architecture %s):\n", nm_data->file_path, get_architecture_name((endian) ? endian_swap_int32(fat_arch_64->cputype) : fat_arch_64->cputype));

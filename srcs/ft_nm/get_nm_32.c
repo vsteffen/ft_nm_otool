@@ -77,7 +77,7 @@ struct s_sect_32	*add_sect_32_to_list(struct s_nm_32 *nm_32,
 	return (sect_elem);
 }
 
-struct s_nm_32		*get_nm_32(void *ptr_header, int8_t endian)
+struct s_nm_32		*get_nm_32(void *ptr_header, int8_t endian, struct s_nm_data *nm_data)
 {
 	size_t						i;
 	size_t						count_sect;
@@ -86,9 +86,15 @@ struct s_nm_32		*get_nm_32(void *ptr_header, int8_t endian)
 	struct load_command			*lc;
 	struct s_nm_32				*nm_32;
 	struct symtab_command		*sym_command;
+	struct segment_command_64	*seg;
 	uint32_t					header_ncmds;
 	uint32_t					lc_cmd;
 
+	if (sizeof(*header) + sizeof(*lc) >= nm_data->file_size)
+	{
+		ft_printf("ft_nm: %s: corrupted binary.\n", nm_data->file_path);
+		return (NULL);
+	}
 	header = (struct mach_header *)ptr_header;
 	header_ncmds = (endian) ? endian_swap_int32(header->ncmds) : header->ncmds;
 	lc = (struct load_command *)(ptr_header + sizeof(*header));
@@ -98,6 +104,11 @@ struct s_nm_32		*get_nm_32(void *ptr_header, int8_t endian)
 	nm_32 = (struct s_nm_32*)malloc(sizeof(struct s_nm_32));
 	nm_32->sym_list = NULL;
 	nm_32->sect_list = NULL;
+	if (sizeof(*lc) * ((header_ncmds == 0) ? 0 : header_ncmds - 1) + ((sizeof(*seg) > sizeof(*sym_command)) ? sizeof(*seg) : sizeof(*sym_command)) >= nm_data->file_size)
+	{
+		ft_printf("ft_nm: %s: corrupted binary.\n", nm_data->file_path);
+		return (NULL);
+	}
 	while (i++ < header_ncmds)
 	{
 		lc_cmd = (endian) ? endian_swap_int32(lc->cmd) : lc->cmd;

@@ -56,7 +56,6 @@ int8_t			hexdump_with_ascii_32(void *ptr_header, struct section *sect, int8_t en
 	uint32_t		offset;
 	void			*content;
 
-
 	if (is_ppc_arch_32(ptr_header, endian))
 		return (hexdump_ppc_32(ptr_header, sect, endian, nm_data));
 	addr = (endian) ? endian_swap_int64(sect->addr) : sect->addr;
@@ -122,15 +121,16 @@ int8_t			find_segments_and_sections_32(void *ptr_header, int8_t endian, struct s
 	size_t						i;
 	struct mach_header			*header;
 	struct load_command			*lc;
+	struct segment_command		*seg;
 	uint32_t					header_ncmds;
 	uint32_t					lc_cmd;
 
-	if (sizeof(struct mach_header) + sizeof(struct load_command) >= nm_data->file_size)
+	if (sizeof(*header) + sizeof(*lc) >= nm_data->file_size)
 		return (exit_err(nm_data->file_path, " corrupted binary"));
 	header = (struct mach_header *)ptr_header;
 	header_ncmds = (endian) ? endian_swap_int32(header->ncmds) : header->ncmds;
 	lc = (struct load_command *)(ptr_header + sizeof(*header));
-	if (sizeof(struct load_command) * header_ncmds >= nm_data->file_size)
+	if (sizeof(*lc) * ((header_ncmds == 0) ? 0 : header_ncmds - 1) + sizeof(*seg) >= nm_data->file_size)
 		return (exit_err(nm_data->file_path, " corrupted binary"));
 	i = 0;
 	while (i++ < header_ncmds)

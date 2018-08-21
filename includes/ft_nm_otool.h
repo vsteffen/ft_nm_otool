@@ -68,7 +68,6 @@ typedef struct			s_status {
 	int8_t				ret;
 }						t_status;
 
-
 void					print_sections_32(struct s_sect_32 *sect_list);
 void					print_sections_32_deprecated(struct segment_command *seg);
 void					print_segments_32_deprecated(char *content);
@@ -89,8 +88,8 @@ char					get_correct_letter(char letter, int8_t stab_ext_p_local);
 struct s_sect_32		*get_section_32(struct s_sect_32 *sect_list, uint32_t ordinal);
 struct s_sect_64		*get_section_64(struct s_sect_64 *sect_list, uint32_t ordinal);
 
-struct s_nm_32			*get_nm_32(void *ptr_header, int8_t endian);
-struct s_nm_64			*get_nm_64(void *ptr_header, int8_t endian);
+struct s_nm_32			*get_nm_32(void *ptr_header, int8_t endian, struct s_nm_data *nm_data);
+struct s_nm_64			*get_nm_64(void *ptr_header, int8_t endian, struct s_nm_data *nm_data);
 
 void					sort_nm_32(struct s_nm_32 *nm_32, int8_t endian, struct s_nm_data *nm_data);
 void					sort_nm_64(struct s_nm_64 *nm_64, int8_t endian, struct s_nm_data *nm_data);

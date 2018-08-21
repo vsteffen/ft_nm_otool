@@ -61,7 +61,7 @@ int8_t		handle_64(void *ptr_header, int8_t endian, struct s_nm_data *nm_data)
 	struct s_nm_64				*nm_64;
 	int8_t						res;
 
-	nm_64 = get_nm_64(ptr_header, endian);
+	nm_64 = get_nm_64(ptr_header, endian, nm_data);
 	sort_nm_64(nm_64, endian, nm_data);
 	if (nm_64->sym_list)
 		res = iter_sym_table_and_print_64(nm_64, endian);
@@ -79,7 +79,7 @@ int8_t		handle_32(void *ptr_header, int8_t endian, struct s_nm_data *nm_data)
 	struct s_nm_32				*nm_32;
 	int8_t						res;
 
-	nm_32 = get_nm_32(ptr_header, endian);
+	nm_32 = get_nm_32(ptr_header, endian, nm_data);
 	sort_nm_32(nm_32, endian, nm_data);
 	if (nm_32->sym_list)
 		res = iter_sym_table_and_print_32(nm_32, endian);
@@ -146,48 +146,60 @@ int8_t		handle_fat_header_32(void *ptr_header, int8_t endian, struct s_nm_data *
 	uint32_t			magic_number;
 	size_t				i;
 
+	if (sizeof(*fat_header) + sizeof(*fat_arch_32) >= nm_data->file_size)
+	return (exit_err(nm_data->file_path, " corrupted binary"));
 	fat_header = (struct fat_header*)ptr_header;
 	fat_arch_32 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header));
 	nb_arch = (endian) ? endian_swap_int32(fat_header->nfat_arch) : fat_header->nfat_arch;
 	i = 0;
 	while (i < nb_arch)
 	{
+		if (sizeof(*fat_header) + sizeof(*fat_arch_32) * i + sizeof(*fat_arch_32) >= nm_data->file_size)
+			return (exit_err(nm_data->file_path, " corrupted binary"));
 		fat_arch_32 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header) + sizeof(struct fat_arch) * i);
 		ft_printf("\n%s (for architecture %s):\n", nm_data->file_path, get_architecture_name((endian) ? endian_swap_int32(fat_arch_32->cputype) : fat_arch_32->cputype));
 		offset_arch = (endian) ? endian_swap_int32(fat_arch_32->offset) : fat_arch_32->offset;
+		if (offset_arch >= nm_data->file_size)
+			return (exit_err(nm_data->file_path, " corrupted binary"));
 		magic_number = *(uint32_t *)(ptr_header + offset_arch);
 		match_and_use_magic_number(ptr_header + offset_arch, magic_number, nm_data);
 		i++;
 	}
-	return (1);
+	return (0);
 }
 
 int8_t		handle_fat_header_64(void *ptr_header, int8_t endian, struct s_nm_data *nm_data)
 {
 	struct fat_header	*fat_header;
-	struct fat_arch		*fat_arch_64;
+	struct fat_arch_64	*fat_arch_64;
 	uint32_t			nb_arch;
 	uint32_t			offset_arch;
 	uint32_t			magic_number;
 	size_t				i;
 
+	if (sizeof(*fat_header) + sizeof(*fat_arch_64) >= nm_data->file_size)
+		return (exit_err(nm_data->file_path, " corrupted binary"));
 	fat_header = (struct fat_header*)ptr_header;
-	fat_arch_64 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header));
+	fat_arch_64 = (struct fat_arch_64*)(ptr_header + sizeof(struct fat_header));
 	nb_arch = (endian) ? endian_swap_int32(fat_header->nfat_arch) : fat_header->nfat_arch;
 	i = 0;
 	while (i < nb_arch)
 	{
-		fat_arch_64 = (struct fat_arch*)(ptr_header + sizeof(struct fat_header) + sizeof(struct fat_arch) * i);
+		if (sizeof(*fat_header) + sizeof(*fat_arch_64) * i + sizeof(*fat_arch_64) >= nm_data->file_size)
+			return (exit_err(nm_data->file_path, " corrupted binary"));
+		fat_arch_64 = (struct fat_arch_64*)(ptr_header + sizeof(struct fat_header) + sizeof(struct fat_arch) * i);
 		ft_printf("\n%s (for architecture %s):\n", nm_data->file_path, get_architecture_name((endian) ? endian_swap_int32(fat_arch_64->cputype) : fat_arch_64->cputype));
 		offset_arch = (endian) ? endian_swap_int64(fat_arch_64->offset) : fat_arch_64->offset;
+		if (offset_arch >= nm_data->file_size)
+			return (exit_err(nm_data->file_path, " corrupted binary"));
 		magic_number = *(uint32_t *)(ptr_header + offset_arch);
 		match_and_use_magic_number(ptr_header + offset_arch, magic_number, nm_data);
 		i++;
 	}
-	return (1);
+	return (0);
 }
 
-void		*find_next_ar_header(void *ptr_header, size_t *i, struct s_nm_data *nm_data)
+void		find_next_ar_header(void *ptr_header, size_t *i, struct s_nm_data *nm_data)
 {
 	char		*file;
 
@@ -197,11 +209,10 @@ void		*find_next_ar_header(void *ptr_header, size_t *i, struct s_nm_data *nm_dat
 		if (ft_strncmp(ARFMAG, file + *i, ft_strlen(ARFMAG)) == 0)
 		{
 			*i += 2;
-			return ((void*)ptr_header + *i);
+			return ;
 		}
 		(*i)++;
 	}
-	return (NULL);
 }
 
 void		*find_begin_ar_file(void *ptr_header, size_t *i, struct s_nm_data *nm_data)
@@ -265,6 +276,8 @@ int8_t		handle_ar(void *ptr_header, struct s_nm_data *nm_data)
 	i = 0;
 	is_32_ar = 0;
 	find_next_ar_header(ptr_header, &i, nm_data);
+	if (i >= nm_data->file_size)
+		return (exit_err(nm_data->file_path, " corrupted binary"));
 	if (ft_strncmp(SYMDEF, ptr_header + i, ft_strlen(SYMDEF)) == 0 || ft_strncmp(SYMDEF_SORTED, ptr_header + i, ft_strlen(SYMDEF_SORTED)) == 0)
 	{
 		is_32_ar = 1;
@@ -274,22 +287,26 @@ int8_t		handle_ar(void *ptr_header, struct s_nm_data *nm_data)
 		ran_off = get_ran_off_64(ptr_header, &i, nm_data);
 	else
 		return (1);
-	if (ran_off == 0)
-		return (1);
 	symtab_pos = i;
+	if (ran_off == 0 || ran_off + symtab_pos >= nm_data->file_size)
+		return (exit_err(nm_data->file_path, " corrupted binary"));
 	j = i + ((is_32_ar) ? sizeof(uint32_t) : sizeof(uint64_t));
-	offset_file_tmp = (uint64_t) - 1;
+	offset_file_tmp = (uint64_t)-1;
 	while (j < ran_off + symtab_pos)
 	{
 		i = (is_32_ar) ? *(uint32_t*)(ptr_header + j) : *(uint64_t*)(ptr_header + symtab_pos + j);
 		if (i >= nm_data->file_size)
-			return (1);
+			return (exit_err(nm_data->file_path, " corrupted binary"));
 		find_next_ar_header(ptr_header, &i, nm_data);
-		if (offset_file_tmp == (uint64_t) - 1 || i != offset_file_tmp)
+		if (i >= nm_data->file_size)
+			return (exit_err(nm_data->file_path, " corrupted binary"));
+		if (offset_file_tmp == (uint64_t)-1 || i != offset_file_tmp)
 		{
 			offset_file_tmp = i;
 			ft_printf("\n%s(%s):\n", nm_data->file_path, ptr_header + i);
 			find_begin_ar_file(ptr_header, &i, nm_data);
+			if (i >= nm_data->file_size)
+				return (exit_err(nm_data->file_path, " corrupted binary"));
 			match_and_use_magic_number(ptr_header + i, *(uint32_t *)(ptr_header + i), nm_data);
 		}
 		j += 2 * ((is_32_ar) ? sizeof(uint32_t) : sizeof(uint64_t));
