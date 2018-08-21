@@ -57,6 +57,17 @@ typedef struct			s_file_st {
 	cpu_type_t			cputype;
 }						t_file_st;
 
+typedef struct			s_nm_data {
+	char				*file_path;
+	size_t				file_size;
+	int8_t				*flag;
+}						t_nm_data;
+
+typedef struct			s_status {
+	int8_t				res;
+	int8_t				ret;
+}						t_status;
+
 
 void					print_sections_32(struct s_sect_32 *sect_list);
 void					print_sections_32_deprecated(struct segment_command *seg);
@@ -81,10 +92,10 @@ struct s_sect_64		*get_section_64(struct s_sect_64 *sect_list, uint32_t ordinal)
 struct s_nm_32			*get_nm_32(void *ptr_header, int8_t endian);
 struct s_nm_64			*get_nm_64(void *ptr_header, int8_t endian);
 
-void					sort_nm_32(struct s_nm_32 *nm_32, int8_t endian, int8_t flag[3]);
-void					sort_nm_64(struct s_nm_64 *nm_64, int8_t endian, int8_t flag[3]);
+void					sort_nm_32(struct s_nm_32 *nm_32, int8_t endian, struct s_nm_data *nm_data);
+void					sort_nm_64(struct s_nm_64 *nm_64, int8_t endian, struct s_nm_data *nm_data);
 
-int8_t					match_and_use_magic_number(void *ptr_header, uint32_t magic_number, struct s_file_st *file_st, int8_t flag[3]);
+int8_t					match_and_use_magic_number(void *ptr_header, uint32_t magic_number, struct s_nm_data *nm_data);
 int8_t					find_segments_and_sections_32(void *ptr_header, int8_t endian, int8_t flag[2]);
 int8_t					find_segments_and_sections_64(void *ptr_header, int8_t endian, int8_t flag[2]);
 

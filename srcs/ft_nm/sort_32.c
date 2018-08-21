@@ -114,11 +114,11 @@ void merge_sort_32(struct s_sym_32 **head_ref, \
 	*head_ref = sorted_merge(elem1, elem2, sort_selected, endian);
 }
 
-void		sort_nm_32(struct s_nm_32 *nm_32, int8_t endian, int8_t flag[2])
+void		sort_nm_32(struct s_nm_32 *nm_32, int8_t endian, struct s_nm_data *nm_data)
 {
-	if (flag[0] == 1)
+	if (nm_data->flag[0] == 1)
 		return ;
-	if (flag[1] == 1)
+	if (nm_data->flag[1] == 1)
 		merge_sort_32(&(nm_32->sym_list), &sort_reverse, endian);
 	else
 		merge_sort_32(&(nm_32->sym_list), &sort_alphabetically, endian);
