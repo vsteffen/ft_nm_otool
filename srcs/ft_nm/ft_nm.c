@@ -8,32 +8,88 @@ int8_t		exit_err(char *path, char *message)
 	return (EXIT_FAILURE);
 }
 
+void		free_nm_32(struct s_nm_32 *nm_32)
+{
+	struct s_sym_32		*sym_32_tmp;
+	struct s_sect_32	*sect_32_tmp;
+
+	if (nm_32 && nm_32->sym_list)
+	{
+		while (nm_32->sym_list)
+		{
+			sym_32_tmp = nm_32->sym_list;
+			nm_32->sym_list = nm_32->sym_list->next;
+			free(sym_32_tmp);
+		}
+		while (nm_32->sect_list)
+		{
+			sect_32_tmp = nm_32->sect_list;
+			nm_32->sect_list = nm_32->sect_list->next;
+			free(sect_32_tmp);
+		}
+	}
+	if (nm_32)
+		free(nm_32);
+}
+
+void		free_nm_64(struct s_nm_64 *nm_64)
+{
+	struct s_sym_64		*sym_64_tmp;
+	struct s_sect_64	*sect_64_tmp;
+
+	if (nm_64 && nm_64->sym_list)
+	{
+		while (nm_64->sym_list)
+		{
+			sym_64_tmp = nm_64->sym_list;
+			nm_64->sym_list = nm_64->sym_list->next;
+			free(sym_64_tmp);
+		}
+		while (nm_64->sect_list)
+		{
+			sect_64_tmp = nm_64->sect_list;
+			nm_64->sect_list = nm_64->sect_list->next;
+			free(sect_64_tmp);
+		}
+	}
+	if (nm_64)
+		free(nm_64);
+}
+
 int8_t		handle_64(void *ptr_header, int8_t endian, int8_t flag[2])
 {
 	struct s_nm_64				*nm_64;
+	int8_t						res;
 
-	// ft_printf("Handle 64 bits in %s endian\n", (endian) ? "little" : "big");
-	// print_segments_64_deprecated(content);
 	nm_64 = get_nm_64(ptr_header, endian);
 	sort_nm_64(nm_64, endian, flag);
 	if (nm_64->sym_list)
-		return (iter_sym_table_and_print_64(nm_64, endian));
-	ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
-	return (-1);
+		res = iter_sym_table_and_print_64(nm_64, endian);
+	else
+	{
+		ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
+		res = -1;
+	}
+	free_nm_64(nm_64);
+	return (res);
 }
 
 int8_t		handle_32(void *ptr_header, int8_t endian, int8_t flag[2])
 {
 	struct s_nm_32				*nm_32;
+	int8_t						res;
 
-	// ft_printf("Handle 32 bits in %s endian\n", (endian) ? "little" : "big");
-	// print_segments_32_deprecated(content);
 	nm_32 = get_nm_32(ptr_header, endian);
 	sort_nm_32(nm_32, endian, flag);
 	if (nm_32->sym_list)
-		return (iter_sym_table_and_print_32(nm_32, endian));
-	ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
-	return (-1);
+		res = iter_sym_table_and_print_32(nm_32, endian);
+	else
+	{
+		ft_putstr("ft_nm: The file was not recognized as a valid object file\n");
+		res = -1;
+	}
+	free_nm_32(nm_32);
+	return (res);
 }
 
 int32_t		endian_swap_int32(uint32_t x)

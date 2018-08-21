@@ -49,7 +49,6 @@ typedef struct			s_nm_64 {
 	struct s_sym_64		*sym_list;
 	struct s_sect_64	*sect_list;
 	size_t				sym_list_size;
-	uint32_t			reserved32;
 }						t_nm_64;
 
 typedef struct			s_file_st {
