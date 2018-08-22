@@ -68,14 +68,46 @@ typedef struct			s_status {
 	int8_t				ret;
 }						t_status;
 
-void					print_sections_32(struct s_sect_32 *sect_list);
-void					print_sections_32_deprecated(struct segment_command *seg);
-void					print_segments_32_deprecated(char *content);
-void					print_symboles_32(struct s_sym_32 *sym_list);
-void					print_sections_64(struct s_sect_64 *sect_list);
-void					print_sections_64_deprecated(struct segment_command_64 *seg);
-void					print_segments_64_deprecated(char *content);
-void					print_symboles_64(struct s_sym_64 *sym_list);
+typedef struct			s_ar {
+	uint64_t			ran_off;
+	int8_t				is_32_ar;
+	size_t				i;
+	size_t				j;
+	size_t				symtab_pos;
+	uint64_t			offset_file_tmp;
+}						t_ar;
+
+typedef struct			s_fat {
+	struct fat_header	*fat_header;
+	struct fat_arch		*fat_arch_32;
+	struct fat_arch_64	*fat_arch_64;
+	uint32_t			nb_arch;
+	uint32_t			offset_arch;
+	uint32_t			magic_number;
+	size_t				i;
+}						t_fat;
+
+int8_t					get_flag_nm(int8_t flag[2], int ac, char **av);
+int8_t					get_flag_otool(int8_t flag[2], int ac, char **av);
+int8_t					verif_files_and_print_filename_if_one_file(int ac, \
+	char **av);
+int8_t					is_flag_nm(char *arg);
+int8_t					is_flag_otool(char *arg);
+int8_t					verif_args_files_and_get_nb_files(int ac, char **av);
+
+int8_t					analyse_magic_number(void *ptr_header, \
+	struct s_nm_data *nm_data);
+
+int8_t					handle_fat_header_32(void *ptr_header, int8_t endian, \
+	struct s_nm_data *nm_data);
+int8_t					handle_fat_header_64(void *ptr_header, int8_t endian, \
+	struct s_nm_data *nm_data);
+
+int8_t					handle_ar(void *ptr_header, struct s_nm_data *nm_data);
+void					find_next_ar_header(void *ptr_header, size_t *i, \
+	struct s_nm_data *nm_data);
+void					*find_begin_ar_file(void *ptr_header, size_t *i, \
+	struct s_nm_data *nm_data);
 
 int8_t					iter_sym_table_and_print_32(struct s_nm_32 *nm_32, int8_t endian);
 int8_t					iter_sym_table_and_print_64(struct s_nm_64 *nm_64, int8_t endian);
@@ -90,6 +122,8 @@ struct s_sect_64		*get_section_64(struct s_sect_64 *sect_list, uint32_t ordinal)
 
 struct s_nm_32			*get_nm_32(void *ptr_header, int8_t endian, struct s_nm_data *nm_data);
 struct s_nm_64			*get_nm_64(void *ptr_header, int8_t endian, struct s_nm_data *nm_data);
+void					free_nm_32(struct s_nm_32 *nm_32);
+void					free_nm_64(struct s_nm_64 *nm_64);
 
 void					sort_nm_32(struct s_nm_32 *nm_32, int8_t endian, struct s_nm_data *nm_data);
 void					sort_nm_64(struct s_nm_64 *nm_64, int8_t endian, struct s_nm_data *nm_data);

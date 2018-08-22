@@ -34,6 +34,12 @@ HPATH 	=	-I $(ROOT)/includes -I $(LIBFT)/includes
 
 NM 		= 	ft_nm
 NM_SRC	=	$(NM)/ft_nm.c \
+			$(NM)/flag.c \
+			$(NM)/magic_number_and_handle_32_64.c \
+			$(NM)/fat_header.c \
+			$(NM)/ar_1.c \
+			$(NM)/ar_2.c \
+			$(NM)/common_functions.c \
 			$(NM)/get_nm_32.c \
 			$(NM)/get_nm_64.c \
 			$(NM)/sort_32.c \
@@ -47,6 +53,12 @@ NM_OBJ	=	$(patsubst %.c, $(OPATH)/%.o, $(NM_SRC))
 
 OTOOL 		= 	ft_otool
 OTOOL_SRC	=	$(OTOOL)/ft_otool.c \
+				$(OTOOL)/flag.c \
+				$(OTOOL)/magic_number_and_handle_32_64.c \
+				$(OTOOL)/fat_header.c \
+				$(OTOOL)/ar_1.c \
+				$(OTOOL)/ar_2.c \
+				$(OTOOL)/common_functions.c \
 				$(OTOOL)/sections_32.c \
 				$(OTOOL)/sections_64.c
 
