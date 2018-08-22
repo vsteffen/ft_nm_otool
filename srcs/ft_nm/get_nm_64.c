@@ -1,10 +1,11 @@
 #include "ft_nm_otool.h"
 
 struct s_sym_64			*get_sym_list_64(void *ptr_header, \
-	struct symtab_command *sym_command, int8_t endian)
+	struct symtab_command *sym_command, int8_t endian, struct s_nm_data *nm_data)
 {
 	struct nlist_64		*sym_table_entry;
 	char				*sym_table_string;
+	char				*sym_table_string_elem;
 	struct s_sym_64		*sym_elem;
 	struct s_sym_64		*sym_elem_first;
 	struct s_sym_64		*sym_elem_prev;
@@ -25,12 +26,23 @@ struct s_sym_64			*get_sym_list_64(void *ptr_header, \
 		sym_table_string = ptr_header + sym_command->stroff;
 		sym_command_nsyms = sym_command->nsyms;
 	}
+	if ((size_t)((void*)sym_table_entry - (void*)ptr_header) + sizeof(*sym_command) + sizeof(*sym_table_entry) * sym_command_nsyms >= nm_data->file_size)
+	{
+		ft_printf("ft_nm: %s: corrupted binary.\n", nm_data->file_path);
+		return (NULL);
+	}
 	i = 0;
 	while (i < sym_command_nsyms)
 	{
 		sym_elem = (struct s_sym_64 *)malloc(sizeof(struct s_sym_64));
 		sym_elem->elem = sym_table_entry[i];
-		sym_elem->sym_table_string = (endian) ? sym_table_string + endian_swap_int32(sym_table_entry[i].n_un.n_strx) : sym_table_string + sym_table_entry[i].n_un.n_strx;
+		sym_table_string_elem = (endian) ? sym_table_string + endian_swap_int32(sym_table_entry[i].n_un.n_strx) : sym_table_string + sym_table_entry[i].n_un.n_strx;
+		if ((size_t)((void*)sym_table_string - (void*)ptr_header) > nm_data->file_size)
+		{
+			ft_printf("ft_nm: %s: corrupted binary.\n", nm_data->file_path);
+			return (NULL);
+		}
+		sym_elem->sym_table_string = sym_table_string_elem;
 		sym_elem->order = i;
 		if (i == 0)
 			sym_elem_first = sym_elem;
@@ -46,7 +58,7 @@ struct s_sym_64			*get_sym_list_64(void *ptr_header, \
 
 struct s_sect_64	*add_sect_64_to_list(struct s_nm_64 *nm_64, \
 	struct segment_command_64 *seg, size_t *count_sect, \
-	struct s_sect_64 *sect_last_list, int8_t endian)
+	struct s_sect_64 *sect_last_list, int8_t endian, struct s_nm_data *nm_data, void *ptr_header)
 {
 	struct s_sect_64	*sect_elem;
 	struct section_64	*sect;
@@ -57,6 +69,11 @@ struct s_sect_64	*add_sect_64_to_list(struct s_nm_64 *nm_64, \
 	sect = (void *)seg + sizeof(*seg);
 	sect_elem = NULL;
 	seg_nsects = (endian) ? endian_swap_int32(seg->nsects) : seg->nsects;
+	if ((size_t)((void*)sect - (void*)ptr_header) + sizeof(*sect) * seg_nsects >= nm_data->file_size)
+	{
+		ft_printf("ft_nm: %s: corrupted binary.\n", nm_data->file_path);
+		return (NULL);
+	}
 	while(i < seg_nsects)
 	{
 		sect_elem = (struct s_sect_64 *)malloc(sizeof(struct s_sect_64));
@@ -115,11 +132,11 @@ struct s_nm_64		*get_nm_64(void *ptr_header, int8_t endian, struct s_nm_data *nm
 		if (lc_cmd == LC_SYMTAB)
 		{
 			sym_command = (struct symtab_command *)lc;
-			nm_64->sym_list = get_sym_list_64(ptr_header, sym_command, endian);
+			nm_64->sym_list = get_sym_list_64(ptr_header, sym_command, endian, nm_data);
 			nm_64->sym_list_size = (endian) ? endian_swap_int32(sym_command->nsyms) : sym_command->nsyms;
 		}
 		if (lc_cmd == LC_SEGMENT_64)
-			sect_last_list = add_sect_64_to_list(nm_64, (struct segment_command_64 *)lc, &count_sect, sect_last_list, endian);
+			sect_last_list = add_sect_64_to_list(nm_64, (struct segment_command_64 *)lc, &count_sect, sect_last_list, endian, nm_data, ptr_header);
 		lc = (endian) ? (void *)lc + endian_swap_int32(lc->cmdsize) : (void *)lc + lc->cmdsize;
 	}
 	return (nm_64);
