@@ -93,6 +93,14 @@ struct s_nm_64			*get_nm_64(void *ptr_header, int8_t endian, struct s_nm_data *n
 
 void					sort_nm_32(struct s_nm_32 *nm_32, int8_t endian, struct s_nm_data *nm_data);
 void					sort_nm_64(struct s_nm_64 *nm_64, int8_t endian, struct s_nm_data *nm_data);
+int8_t					sort_alphabetically_64(struct s_sym_64 *elem1, \
+	struct s_sym_64 *elem2, int8_t endian);
+int8_t					sort_reverse_64(struct s_sym_64 *elem1, \
+	struct s_sym_64 *elem2, int8_t endian);
+int8_t					sort_alphabetically_32(struct s_sym_32 *elem1, \
+	struct s_sym_32 *elem2, int8_t endian);
+int8_t					sort_reverse_32(struct s_sym_32 *elem1, \
+	struct s_sym_32 *elem2, int8_t endian);
 
 int8_t					match_and_use_magic_number(void *ptr_header, uint32_t magic_number, struct s_nm_data *nm_data);
 int8_t					find_segments_and_sections_32(void *ptr_header, int8_t endian, struct s_nm_data *nm_data);
