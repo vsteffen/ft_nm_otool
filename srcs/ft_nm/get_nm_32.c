@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_nm_32.c                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: vsteffen <marvin@42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2018/08/30 18:46:40 by vsteffen          #+#    #+#             */
+/*   Updated: 2018/08/30 18:46:41 by vsteffen         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "ft_nm_otool.h"
 
 struct s_sym_32			*get_sym_list_32(void *ptr_header, \
@@ -74,7 +86,7 @@ struct s_sect_32	*add_sect_32_to_list(struct s_nm_32 *nm_32,
 		ft_printf("ft_nm: %s: corrupted binary.\n", nm_data->file_path);
 		return (NULL);
 	}
-	while(i < seg_nsects)
+	while (i < seg_nsects)
 	{
 		sect_elem = (struct s_sect_32 *)malloc(sizeof(struct s_sect_32));
 		sect_elem->elem = sect[i];
@@ -94,52 +106,66 @@ struct s_sect_32	*add_sect_32_to_list(struct s_nm_32 *nm_32,
 	return (sect_elem);
 }
 
-struct s_nm_32		*get_nm_32(void *ptr_header, int8_t endian, struct s_nm_data *nm_data)
+void				init_get_nm_32(struct s_get_nm_32 *get, void *ptr_header, \
+	int8_t endian)
 {
-	size_t						i;
-	size_t						count_sect;
-	struct s_sect_32			*sect_last_list;
-	struct mach_header			*header;
-	struct load_command			*lc;
-	struct s_nm_32				*nm_32;
-	struct symtab_command		*sym_command;
-	struct segment_command_64	*seg;
-	uint32_t					header_ncmds;
-	uint32_t					lc_cmd;
+	get->header = (struct mach_header *)ptr_header;
+	get->header_ncmds = (endian) ? endian_swap_int32(get->header->ncmds) \
+		: get->header->ncmds;
+	get->lc = (struct load_command *)(ptr_header + sizeof(*(get->header)));
+	get->count_sect = 1;
+	get->i = 0;
+	get->sect_last_list = NULL;
+	get->nm_32 = (struct s_nm_32*)malloc(sizeof(struct s_nm_32));
+	get->nm_32->sym_list = NULL;
+	get->nm_32->sect_list = NULL;
+}
 
-	if (sizeof(*header) + sizeof(*lc) >= nm_data->file_size)
+int8_t				verif_corrupted_nm_32(void *ptr_header, int8_t endian, \
+	struct s_nm_data *nm_data, struct s_get_nm_32 *get)
+{
+	if (sizeof(*(get->header)) + sizeof(*(get->lc)) >= nm_data->file_size)
 	{
 		ft_printf("ft_nm: %s: corrupted binary.\n", nm_data->file_path);
-		return (NULL);
+		return (1);
 	}
-	header = (struct mach_header *)ptr_header;
-	header_ncmds = (endian) ? endian_swap_int32(header->ncmds) : header->ncmds;
-	lc = (struct load_command *)(ptr_header + sizeof(*header));
-	count_sect = 1;
-	i = 0;
-	sect_last_list = NULL;
-	nm_32 = (struct s_nm_32*)malloc(sizeof(struct s_nm_32));
-	nm_32->sym_list = NULL;
-	nm_32->sect_list = NULL;
-	if (sizeof(*lc) * ((header_ncmds == 0) ? 0 : header_ncmds - 1) + ((sizeof(*seg) > sizeof(*sym_command)) ? sizeof(*seg) : sizeof(*sym_command)) >= nm_data->file_size)
+	init_get_nm_32(get, ptr_header, endian);
+	if (sizeof(*(get->lc)) * ((get->header_ncmds == 0) ? 0 : get->header_ncmds \
+		- 1) + ((sizeof(*(get->seg)) > sizeof(*(get->sym_command))) \
+		? sizeof(*(get->seg)) : sizeof(*(get->sym_command))) \
+		>= nm_data->file_size)
 	{
 		ft_printf("ft_nm: %s: corrupted binary.\n", nm_data->file_path);
+		return (1);
+	}
+	return (0);
+}
+
+struct s_nm_32		*get_nm_32(void *ptr_header, int8_t endian, \
+	struct s_nm_data *nm_data)
+{
+	struct s_get_nm_32		get;
+
+	if (verif_corrupted_nm_32(ptr_header, endian, nm_data, &get) == 1)
 		return (NULL);
-	}
-	while (i++ < header_ncmds)
+	while ((get.i)++ < get.header_ncmds)
 	{
-		lc_cmd = (endian) ? endian_swap_int32(lc->cmd) : lc->cmd;
-		if (lc_cmd == LC_SYMTAB)
+		get.lc_cmd = (endian) ? endian_swap_int32(get.lc->cmd) : get.lc->cmd;
+		if (get.lc_cmd == LC_SYMTAB)
 		{
-			sym_command = (struct symtab_command *)lc;
-			nm_32->sym_list = get_sym_list_32(ptr_header, sym_command, endian, nm_data);
-			nm_32->sym_list_size = (endian) ? endian_swap_int32(sym_command->nsyms) : sym_command->nsyms;
+			get.sym_command = (struct symtab_command *)get.lc;
+			get.nm_32->sym_list = get_sym_list_32(ptr_header, get.sym_command, \
+				endian, nm_data);
+			get.nm_32->sym_list_size = (endian) \
+				? endian_swap_int32(get.sym_command->nsyms) \
+				: get.sym_command->nsyms;
 		}
-		if (lc_cmd == LC_SEGMENT)
-		{
-			sect_last_list = add_sect_32_to_list(nm_32, (struct segment_command *)lc, &count_sect, sect_last_list, endian, nm_data, ptr_header);
-		}
-		lc = (endian) ? (void *)lc + endian_swap_int32(lc->cmdsize) : (void *)lc + lc->cmdsize;
+		if (get.lc_cmd == LC_SEGMENT)
+			get.sect_last_list = add_sect_32_to_list(get.nm_32, \
+				(struct segment_command *)get.lc, &(get.count_sect), \
+				get.sect_last_list, endian, nm_data, ptr_header);
+		get.lc = (endian) ? (void *)get.lc + endian_swap_int32(get.lc->cmdsize)\
+			: (void *)get.lc + get.lc->cmdsize;
 	}
-	return (nm_32);
+	return (get.nm_32);
 }
