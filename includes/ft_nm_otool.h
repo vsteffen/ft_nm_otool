@@ -61,6 +61,7 @@ typedef struct			s_nm_data {
 	char				*file_path;
 	size_t				file_size;
 	int8_t				*flag;
+	size_t				ti;
 }						t_nm_data;
 
 typedef struct			s_status {
@@ -86,6 +87,13 @@ typedef struct			s_fat {
 	uint32_t			magic_number;
 	size_t				i;
 }						t_fat;
+
+typedef struct			s_sect_tmp {
+	size_t				i;
+	uint64_t			header_ncmds;
+	uint64_t			lc_cmd;
+
+}						t_sect_tmp;
 
 int8_t					get_flag_nm(int8_t flag[2], int ac, char **av);
 int8_t					get_flag_otool(int8_t flag[2], int ac, char **av);
@@ -139,6 +147,16 @@ int8_t					sort_reverse_32(struct s_sym_32 *elem1, \
 int8_t					match_and_use_magic_number(void *ptr_header, uint32_t magic_number, struct s_nm_data *nm_data);
 int8_t					find_segments_and_sections_32(void *ptr_header, int8_t endian, struct s_nm_data *nm_data);
 int8_t					find_segments_and_sections_64(void *ptr_header, int8_t endian, struct s_nm_data *nm_data);
+int8_t					is_ppc_arch_32(void *ptr_header, int8_t endian);
+void					hexdump_ppc_32_print(void *content, size_t i, \
+	uint32_t addr);
+int8_t					hexdump_ppc_32(void *ptr_header, struct section *sect, \
+	int8_t endian, struct s_nm_data *nm_data);
+int8_t					is_ppc_arch_64(void *ptr_header, int8_t endian);
+void					hexdump_ppc_64_print(void *content, size_t i, \
+	uint64_t addr);
+int8_t					hexdump_ppc_64(void *ptr_header, struct section_64 *sect, \
+	int8_t endian, struct s_nm_data *nm_data);
 
 int8_t					exit_err(char *path, char *message);
 

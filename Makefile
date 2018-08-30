@@ -59,8 +59,10 @@ OTOOL_SRC	=	$(OTOOL)/ft_otool.c \
 				$(OTOOL)/ar_1.c \
 				$(OTOOL)/ar_2.c \
 				$(OTOOL)/common_functions.c \
-				$(OTOOL)/sections_32.c \
-				$(OTOOL)/sections_64.c
+				$(OTOOL)/sections_32_1.c \
+				$(OTOOL)/sections_32_2.c \
+				$(OTOOL)/sections_64_1.c \
+				$(OTOOL)/sections_64_2.c
 
 OTOOL_OBJ	=	$(patsubst %.c, $(OPATH)/%.o, $(OTOOL_SRC))
 
