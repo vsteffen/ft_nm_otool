@@ -10,8 +10,6 @@
 #                                                                              #
 # **************************************************************************** #
 
-NAME	=	ft_nm_otool
-
 CC 		=	/usr/bin/clang
 RM 		=	/bin/rm
 MAKE 	=	/usr/bin/make -C
@@ -70,7 +68,7 @@ OTOOL_OBJ	=	$(patsubst %.c, $(OPATH)/%.o, $(OTOOL_SRC))
 
 .PHONY: all clean fclean re
 
-all: pre-check-submodule pre-check-lib $(NAME)
+all: pre-check-submodule pre-check-lib projects
 
 pre-check-submodule:
 	@echo "\n\033[33m\033[4m\033[1m → ft_nm_otool \"Pre check submodule\"\033[0m"
@@ -83,12 +81,18 @@ pre-check-lib:
 	@echo "Compile or verify lib"
 	@$(MAKE) $(LIBFT)
 
-$(NAME): $(OPATH) $(OTOOL_OBJ) $(NM_OBJ)
-	@echo "\n\033[33m\033[4m\033[1m → ft_nm_otool \"Make\"\033[0m"
+$(NM): $(OPATH) $(NM_OBJ)
 	@echo "Building $(NM)"
 	@$(CC) -o $(NM) $(CFLAGS) $(NM_OBJ) $(LPATH) $(HPATH)
+
+$(OTOOL): $(OPATH) $(OTOOL_OBJ)
 	@echo "Building $(OTOOL)"
 	@$(CC) -o $(OTOOL) $(CFLAGS) $(OTOOL_OBJ) $(LPATH) $(HPATH)
+
+$(PRINT_MAKE):
+	@echo "\n\033[33m\033[4m\033[1m → ft_nm_otool \"Make\"\033[0m"
+
+projects: $(PRINT_MAKE) $(NM) $(OTOOL)
 	@echo "\033[32m ╔════════════════╗"
 	@echo " ║  All is done ! ║"
 	@echo " ╚════════════════╝\033[0m"
