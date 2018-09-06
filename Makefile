@@ -40,8 +40,10 @@ NM_SRC	=	$(NM)/ft_nm.c \
 			$(NM)/ar_1.c \
 			$(NM)/ar_2.c \
 			$(NM)/common_functions.c \
-			$(NM)/get_nm_32.c \
-			$(NM)/get_nm_64.c \
+			$(NM)/get_nm_32_1.c \
+			$(NM)/get_nm_32_2.c \
+			$(NM)/get_nm_64_1.c \
+			$(NM)/get_nm_64_2.c \
 			$(NM)/sort_32.c \
 			$(NM)/sort_64.c \
 			$(NM)/sort_functions.c \

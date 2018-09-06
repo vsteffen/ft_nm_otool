@@ -137,8 +137,49 @@ typedef struct			s_sect_tmp {
 	size_t				i;
 	uint64_t			header_ncmds;
 	uint64_t			lc_cmd;
-
 }						t_sect_tmp;
+
+typedef struct			s_add_sect_32 {
+	t_seg_cmd_32		*seg;
+	t_sect_32			*sect_last_list;
+	void				*ptr_header;
+	int8_t				endian;
+	struct s_sect_32	*sect_elem;
+	struct section		*sect;
+}						t_add_sect_32;
+
+typedef struct			s_add_sect_64 {
+	t_seg_cmd_64		*seg;
+	t_sect_64			*sect_last_list;
+	void				*ptr_header;
+	int8_t				endian;
+	struct s_sect_64	*sect_elem;
+	struct section_64	*sect;
+}						t_add_sect_64;
+
+typedef struct			s_get_sym_32 {
+	struct nlist		*sym_table_entry;
+	char				*sym_table_string;
+	char				*sym_table_string_elem;
+	struct s_sym_32		*sym_elem;
+	struct s_sym_32		*sym_elem_first;
+	struct s_sym_32		*sym_elem_prev;
+	uint32_t			sym_command_nsyms;
+	size_t				i;
+	int8_t				endian;
+}						t_get_sym_32;
+
+typedef struct			s_get_sym_64 {
+	struct nlist_64		*sym_table_entry;
+	char				*sym_table_string;
+	char				*sym_table_string_elem;
+	struct s_sym_64		*sym_elem;
+	struct s_sym_64		*sym_elem_first;
+	struct s_sym_64		*sym_elem_prev;
+	uint32_t			sym_command_nsyms;
+	size_t				i;
+	int8_t				endian;
+}						t_get_sym_64;
 
 int8_t					get_flag_nm(int8_t flag[2], int ac, char **av);
 int8_t					get_flag_otool(int8_t flag[2], int ac, char **av);
@@ -181,6 +222,18 @@ struct s_sect_64		*get_section_64(struct s_sect_64 *sect_list, \
 struct s_nm_32			*get_nm_32(void *ptr_header, int8_t endian, \
 	struct s_nm_data *nm_data);
 struct s_nm_64			*get_nm_64(void *ptr_header, int8_t endian, \
+	struct s_nm_data *nm_data);
+struct s_sect_32		*add_sect_32_to_list(struct s_nm_32 *nm_32, \
+	struct s_add_sect_32 *add_sect, size_t *count_sect, \
+	struct s_nm_data *nm_data);
+struct s_sect_64		*add_sect_64_to_list(struct s_nm_64 *nm_64, \
+	struct s_add_sect_64 *add_sect, size_t *count_sect, \
+	struct s_nm_data *nm_data);
+struct s_sym_32			*get_sym_list_32(void *ptr_header, \
+	struct symtab_command *sym_command, int8_t endian, \
+	struct s_nm_data *nm_data);
+struct s_sym_64			*get_sym_list_64(void *ptr_header, \
+	struct symtab_command *sym_command, int8_t endian, \
 	struct s_nm_data *nm_data);
 void					free_nm_32(struct s_nm_32 *nm_32);
 void					free_nm_64(struct s_nm_64 *nm_64);
