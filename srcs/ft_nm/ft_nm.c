@@ -17,6 +17,7 @@ int8_t	exit_err(char *path, char *message)
 	ft_putstr("ft_nm: ");
 	ft_putstr(path);
 	ft_putstr(message);
+	ft_putchar('\n');
 	return (EXIT_FAILURE);
 }
 
